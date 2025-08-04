@@ -31,7 +31,7 @@ export default function QuickView() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[65%]">Name</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead className="text-right">Last Modified</TableHead>
             </TableRow>
           </TableHeader>
@@ -43,7 +43,7 @@ export default function QuickView() {
                     <div className="bg-muted p-2 rounded-lg">
                       <doc.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="font-medium">{doc.name}</div>
+                    <div className="font-medium whitespace-normal break-words">{doc.name}</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">{doc.lastModified}</TableCell>
