@@ -6,6 +6,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   BriefcaseBusiness,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export function AppSidebar() {
+  const { toggleSidebar } = useSidebar();
   return (
     <>
       <SidebarHeader>
@@ -75,7 +77,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarMenuButton onClick={() => toggleSidebar()}>
               <PanelLeft />
               Collapse
             </SidebarMenuButton>
