@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import {
   SidebarHeader,
   SidebarContent,
@@ -64,15 +65,19 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/" tooltip="Dashboard">
-              <Home />
-              <span>Dashboard</span>
+            <SidebarMenuButton asChild tooltip="Dashboard">
+              <Link href="/">
+                <Home />
+                <span>Dashboard</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/spreadsheet" tooltip="Spreadsheet">
-              <Sheet />
-              <span>Spreadsheet</span>
+            <SidebarMenuButton asChild tooltip="Spreadsheet">
+              <Link href="/spreadsheet">
+                <Sheet />
+                <span>Spreadsheet</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
