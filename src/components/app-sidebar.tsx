@@ -1,7 +1,6 @@
 'use client';
 import {
   SidebarHeader,
-  SidebarTrigger,
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
@@ -27,9 +26,6 @@ export function AppSidebar() {
           <h1 className="text-xl font-bold tracking-tight text-foreground">
             ProDesk
           </h1>
-          <div className="ml-auto">
-            <SidebarTrigger />
-          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>

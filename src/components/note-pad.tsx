@@ -21,7 +21,7 @@ export default function NotePad() {
   };
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="sm:col-span-2">
       <CardHeader>
         <CardTitle>Note Pad</CardTitle>
         <CardDescription>A digital scratchpad for quick notes.</CardDescription>
@@ -31,7 +31,7 @@ export default function NotePad() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Jot down your thoughts..."
-          className="h-full resize-none"
+          className="h-32 resize-none"
         />
       </CardContent>
       <CardFooter>

@@ -11,8 +11,8 @@ const appLinks = [
 
 export default function AppLinks() {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="sm:col-span-2">
+      <CardHeader className="pb-3">
         <CardTitle>App Links</CardTitle>
       </CardHeader>
       <CardContent>

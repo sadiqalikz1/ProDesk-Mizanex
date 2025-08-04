@@ -2,38 +2,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { FileText, BarChart2, Presentation } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const recentDocuments = [
   { name: 'Q3_Financial_Report.docx', type: 'doc', lastModified: '2 hours ago', icon: FileText },
   { name: 'Marketing_Analytics_Dashboard.xlsx', type: 'sheet', lastModified: 'Yesterday', icon: BarChart2 },
   { name: 'New_Product_Launch_Plan.pptx', type: 'slide', lastModified: '3 days ago', icon: Presentation },
   { name: 'Project_Alpha_Brief.docx', type: 'doc', lastModified: 'Last week', icon: FileText },
+  { name: '2024_Budget.xlsx', type: 'sheet', lastModified: 'Last week', icon: BarChart2 },
+  { name: 'Q2_Review.pptx', type: 'slide', lastModified: '2 weeks ago', icon: Presentation },
 ];
 
 export default function QuickView() {
   return (
-    <Card>
+    <Card className="grid items-start gap-4">
       <CardHeader>
         <CardTitle>Quick View</CardTitle>
         <CardDescription>Access your recent documents.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-48 pr-4">
-          <ul className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="text-right">Last Modified</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {recentDocuments.map((doc) => (
-              <li key={doc.name} className="flex items-center gap-4">
-                <div className="bg-muted p-3 rounded-lg">
-                  <doc.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{doc.name}</p>
-                  <p className="text-xs text-muted-foreground">{doc.lastModified}</p>
-                </div>
-                <Button variant="ghost" size="sm">View</Button>
-              </li>
+              <TableRow key={doc.name}>
+                <TableCell>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-muted p-2 rounded-lg">
+                      <doc.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="font-medium">{doc.name}</div>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">{doc.lastModified}</TableCell>
+              </TableRow>
             ))}
-          </ul>
-        </ScrollArea>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
