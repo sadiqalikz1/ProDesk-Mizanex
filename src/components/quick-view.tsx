@@ -62,13 +62,11 @@ export default function QuickView() {
         <CardDescription>Access your recent documents.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table className="table-fixed">
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead className="w-[120px] text-right">
-                Last Modified
-              </TableHead>
+              <TableHead className="text-right">Last Modified</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
