@@ -1,6 +1,3 @@
-import TaskManager from '@/components/task-manager';
-import NotePad from '@/components/note-pad';
-import QuickView from '@/components/quick-view';
 import Header from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -8,8 +5,9 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import Spreadsheet from '@/components/spreadsheet';
 
-export default function Home() {
+export default function SpreadsheetPage() {
   return (
     <SidebarProvider>
       <div className="relative flex min-h-screen w-full">
@@ -19,15 +17,7 @@ export default function Home() {
         <SidebarInset>
           <Header />
           <main className="flex-1 p-4 sm:px-6 sm:py-4">
-            <div className="flex flex-col gap-4 md:gap-8 lg:flex-row">
-              <div className="flex flex-col gap-4 md:gap-8 lg:w-2/3">
-                <NotePad />
-                <TaskManager />
-              </div>
-              <div className="lg:w-1/3">
-                <QuickView />
-              </div>
-            </div>
+            <Spreadsheet />
           </main>
         </SidebarInset>
       </div>
