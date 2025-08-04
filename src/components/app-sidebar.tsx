@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -9,12 +8,11 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   BriefcaseBusiness,
   Home,
@@ -22,9 +20,21 @@ import {
   Settings,
   PanelLeft,
   ExternalLink,
+  Mail,
+  Calendar,
+  Database,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import AppLinks from './app-links';
+
+const appLinks = [
+  { name: 'Google Mail', icon: Mail, href: 'https://mail.google.com' },
+  {
+    name: 'Google Calendar',
+    icon: Calendar,
+    href: 'https://calendar.google.com',
+  },
+  { name: 'Microsoft 365', icon: Database, href: 'https://www.office.com' },
+];
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
@@ -59,20 +69,29 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Dialog>
-              <DialogTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <SidebarMenuButton tooltip="External Apps">
                   <ExternalLink />
                   <span>External Apps</span>
                 </SidebarMenuButton>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>External Apps</DialogTitle>
-                </DialogHeader>
-                <AppLinks />
-              </DialogContent>
-            </Dialog>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {appLinks.map((link) => (
+                  <DropdownMenuItem key={link.name} asChild>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <link.icon className="h-4 w-4" />
+                      <span>{link.name}</span>
+                    </a>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#" tooltip="Team Workspace">
