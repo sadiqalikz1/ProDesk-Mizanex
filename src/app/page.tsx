@@ -13,19 +13,19 @@ import {
 export default function Home() {
   return (
     <SidebarProvider>
-      <div className="flex flex-col min-h-screen bg-background">
+      <div className="min-h-screen w-full">
         <Sidebar>
           <AppSidebar />
         </Sidebar>
         <SidebarInset>
           <Header />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto grid gap-6 grid-cols-1 lg:grid-cols-12">
-              <div className="lg:col-span-4 space-y-6">
+          <main className="p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="space-y-6 lg:col-span-4">
                 <AppLinks />
                 <NotePad />
               </div>
-              <div className="lg:col-span-8 space-y-6">
+              <div className="space-y-6 lg:col-span-8">
                 <TaskManager />
                 <QuickView />
               </div>
