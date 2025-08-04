@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Task = {
   id: number;
@@ -59,7 +58,7 @@ export default function TaskManager() {
             <span className="sr-only">Add task</span>
           </Button>
         </form>
-        <ScrollArea className="h-72 pr-4">
+        <div className="pr-4">
           <ul className="space-y-2">
             {tasks.map((task) => (
               <li key={task.id} className="flex items-center gap-3 bg-secondary p-2 rounded-md transition-colors hover:bg-muted">
@@ -84,7 +83,7 @@ export default function TaskManager() {
               </li>
             ))}
           </ul>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );
