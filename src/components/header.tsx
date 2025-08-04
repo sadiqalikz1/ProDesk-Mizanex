@@ -1,4 +1,3 @@
-import { BriefcaseBusiness } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
@@ -18,7 +17,11 @@ export default function Header() {
       <div className="flex-1" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
+          <Button
+            variant="outline"
+            size="icon"
+            className="overflow-hidden rounded-full"
+          >
             <Avatar>
               <AvatarImage
                 src="https://placehold.co/40x40.png"

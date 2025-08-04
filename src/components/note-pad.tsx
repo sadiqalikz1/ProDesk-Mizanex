@@ -21,7 +21,7 @@ export default function NotePad() {
   };
 
   return (
-    <Card className="sm:col-span-2 md:col-span-4">
+    <Card className="col-span-full">
       <CardHeader>
         <CardTitle>Note Pad</CardTitle>
         <CardDescription>A digital scratchpad for quick notes.</CardDescription>
