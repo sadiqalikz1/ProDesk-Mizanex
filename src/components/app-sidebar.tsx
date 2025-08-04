@@ -18,52 +18,60 @@ import {
   Settings,
   PanelLeft,
 } from 'lucide-react';
+import { Button } from './ui/button';
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
   return (
     <>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <BriefcaseBusiness className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            ProDesk
-          </h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BriefcaseBusiness className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              ProDesk
+            </h1>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleSidebar()}>
+            <PanelLeft />
+            <span className="sr-only">Collapse</span>
+          </Button>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#" isActive>
+            <SidebarMenuButton href="#" isActive tooltip="Dashboard">
               <Home />
-              Dashboard
+              <span>Dashboard</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="https://mail.google.com" target="_blank">
+            <SidebarMenuButton href="https://mail.google.com" target="_blank" tooltip="Google Mail">
               <Mail />
-              Google Mail
+              <span>Google Mail</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               href="https://calendar.google.com"
               target="_blank"
+              tooltip="Google Calendar"
             >
               <Calendar />
-              Google Calendar
+              <span>Google Calendar</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="https://www.office.com" target="_blank">
+            <SidebarMenuButton href="https://www.office.com" target="_blank" tooltip="Microsoft 365">
               <Database />
-              Microsoft 365
+              <span>Microsoft 365</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="#" tooltip="Team Workspace">
               <Users />
-              Team Workspace
+              <span>Team Workspace</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -71,15 +79,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="#" tooltip="Settings">
               <Settings />
-              Settings
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => toggleSidebar()}>
-              <PanelLeft />
-              Collapse
+              <span>Settings</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
