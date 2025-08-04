@@ -1,21 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, Calendar, Database, Users } from 'lucide-react';
+import { Mail, Calendar, Database } from 'lucide-react';
 
 const appLinks = [
   { name: 'Google Mail', icon: Mail, href: 'https://mail.google.com' },
   { name: 'Google Calendar', icon: Calendar, href: 'https://calendar.google.com' },
   { name: 'Microsoft 365', icon: Database, href: 'https://www.office.com' },
-  { name: 'Team Workspace', icon: Users, href: '#' },
 ];
 
 export default function AppLinks() {
   return (
-    <Card className="sm:col-span-2">
-      <CardHeader className="pb-3">
-        <CardTitle>App Links</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
         <div className="grid grid-cols-2 gap-4">
           {appLinks.map((link) => (
             <Button
