@@ -58,31 +58,28 @@ export default function TaskManager() {
             <span className="sr-only">Add task</span>
           </Button>
         </form>
-        <div>
-          <ul className="space-y-2">
-            {tasks.map((task) => (
-              <li key={task.id} className="flex items-center gap-3 bg-secondary p-2 rounded-md transition-colors hover:bg-muted">
-                <Checkbox
-                  id={`task-${task.id}`}
-                  checked={task.completed}
-                  onCheckedChange={() => toggleTaskCompletion(task.id)}
-                  aria-label={task.text}
-                />
-                <label
-                  htmlFor={`task-${task.id}`}
-                  className={`flex-1 text-sm cursor-pointer ${
-                    task.completed ? 'text-muted-foreground line-through' : 'text-foreground'
-                  }`}
-                >
-                  {task.text}
-                </label>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteTask(task.id)}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                    <span className="sr-only">Delete task</span>
-                </Button>
-              </li>
-            ))}
-          </ul>
+        <div className="space-y-2">
+          {tasks.map((task) => (
+            <div key={task.id} className="flex items-center gap-3 rounded-md bg-secondary p-2 transition-colors hover:bg-muted">
+              <Checkbox
+                id={`task-${task.id}`}
+                checked={task.completed}
+                onCheckedChange={() => toggleTaskCompletion(task.id)}
+              />
+              <label
+                htmlFor={`task-${task.id}`}
+                className={`flex-1 cursor-pointer text-sm ${
+                  task.completed ? 'text-muted-foreground line-through' : 'text-foreground'
+                }`}
+              >
+                {task.text}
+              </label>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteTask(task.id)}>
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  <span className="sr-only">Delete task</span>
+              </Button>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

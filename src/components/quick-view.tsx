@@ -43,7 +43,7 @@ export default function QuickView() {
                     <div className="bg-muted p-2 rounded-lg">
                       <doc.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="font-medium truncate">{doc.name}</div>
+                    <div className="font-medium">{doc.name}</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">{doc.lastModified}</TableCell>
