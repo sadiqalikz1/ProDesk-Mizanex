@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -16,11 +17,16 @@ import {
   Users,
   Settings,
   PanelLeft,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
+  const [appsOpen, setAppsOpen] = useState(false);
+
   return (
     <>
       <SidebarHeader>
@@ -52,33 +58,52 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              href="https://mail.google.com"
-              target="_blank"
-              tooltip="Google Mail"
+              onClick={() => setAppsOpen(!appsOpen)}
+              tooltip="External Apps"
             >
-              <Mail />
-              <span>Google Mail</span>
+              <ExternalLink />
+              <span className="flex-1">External Apps</span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transform transition-transform duration-200',
+                  appsOpen && 'rotate-180'
+                )}
+              />
             </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              href="https://calendar.google.com"
-              target="_blank"
-              tooltip="Google Calendar"
-            >
-              <Calendar />
-              <span>Google Calendar</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              href="https://www.office.com"
-              target="_blank"
-              tooltip="Microsoft 365"
-            >
-              <Database />
-              <span>Microsoft 365</span>
-            </SidebarMenuButton>
+            {appsOpen && (
+              <div className="ml-4 mt-2 flex flex-col gap-1 border-l pl-4 group-data-[collapsible=icon]:hidden">
+                <SidebarMenuButton
+                  href="https://mail.google.com"
+                  target="_blank"
+                  tooltip="Google Mail"
+                  size="sm"
+                  className="h-8"
+                >
+                  <Mail />
+                  <span>Google Mail</span>
+                </SidebarMenuButton>
+                <SidebarMenuButton
+                  href="https://calendar.google.com"
+                  target="_blank"
+                  tooltip="Google Calendar"
+                  size="sm"
+                  className="h-8"
+                >
+                  <Calendar />
+                  <span>Google Calendar</span>
+                </SidebarMenuButton>
+                <SidebarMenuButton
+                  href="https://www.office.com"
+                  target="_blank"
+                  tooltip="Microsoft 365"
+                  size="sm"
+                  className="h-8"
+                >
+                  <Database />
+                  <span>Microsoft 365</span>
+                </SidebarMenuButton>
+              </div>
+            )}
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#" tooltip="Team Workspace">
