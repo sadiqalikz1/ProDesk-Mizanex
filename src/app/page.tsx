@@ -2,7 +2,6 @@ import AppLinks from '@/components/app-links';
 import TaskManager from '@/components/task-manager';
 import NotePad from '@/components/note-pad';
 import QuickView from '@/components/quick-view';
-import AiAssistant from '@/components/ai-assistant';
 import Header from '@/components/header';
 
 export default function Home() {
@@ -18,9 +17,6 @@ export default function Home() {
           <div className="lg:col-span-8 space-y-6">
             <TaskManager />
             <QuickView />
-          </div>
-          <div className="lg:col-span-12">
-            <AiAssistant />
           </div>
         </div>
       </main>
