@@ -56,13 +56,13 @@ const recentDocuments = [
 
 export default function QuickView() {
   return (
-    <Card className="grid items-start gap-4">
+    <Card>
       <CardHeader>
         <CardTitle>Quick View</CardTitle>
         <CardDescription>Access your recent documents.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
