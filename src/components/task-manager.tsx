@@ -58,7 +58,7 @@ export default function TaskManager() {
             <span className="sr-only">Add task</span>
           </Button>
         </form>
-        <div className="pr-4">
+        <div>
           <ul className="space-y-2">
             {tasks.map((task) => (
               <li key={task.id} className="flex items-center gap-3 bg-secondary p-2 rounded-md transition-colors hover:bg-muted">
