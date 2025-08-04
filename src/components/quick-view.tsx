@@ -1,7 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { FileText, BarChart2, Presentation } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -10,14 +13,45 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { BarChart2, FileText, Presentation } from 'lucide-react';
 
 const recentDocuments = [
-  { name: 'Q3_Financial_Report.docx', type: 'doc', lastModified: '2 hours ago', icon: FileText },
-  { name: 'Marketing_Analytics_Dashboard.xlsx', type: 'sheet', lastModified: 'Yesterday', icon: BarChart2 },
-  { name: 'New_Product_Launch_Plan.pptx', type: 'slide', lastModified: '3 days ago', icon: Presentation },
-  { name: 'Project_Alpha_Brief.docx', type: 'doc', lastModified: 'Last week', icon: FileText },
-  { name: '2024_Budget.xlsx', type: 'sheet', lastModified: 'Last week', icon: BarChart2 },
-  { name: 'Q2_Review.pptx', type: 'slide', lastModified: '2 weeks ago', icon: Presentation },
+  {
+    name: 'Q3_Financial_Report.docx',
+    type: 'doc',
+    lastModified: '2 hours ago',
+    icon: FileText,
+  },
+  {
+    name: 'Marketing_Analytics_Dashboard.xlsx',
+    type: 'sheet',
+    lastModified: 'Yesterday',
+    icon: BarChart2,
+  },
+  {
+    name: 'New_Product_Launch_Plan.pptx',
+    type: 'slide',
+    lastModified: '3 days ago',
+    icon: Presentation,
+  },
+  {
+    name: 'Project_Alpha_Brief.docx',
+    type: 'doc',
+    lastModified: 'Last week',
+    icon: FileText,
+  },
+  {
+    name: '2024_Budget.xlsx',
+    type: 'sheet',
+    lastModified: 'Last week',
+    icon: BarChart2,
+  },
+  {
+    name: 'Q2_Review.pptx',
+    type: 'slide',
+    lastModified: '2 weeks ago',
+    icon: Presentation,
+  },
 ];
 
 export default function QuickView() {
@@ -32,7 +66,9 @@ export default function QuickView() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead className="text-right">Last Modified</TableHead>
+              <TableHead className="w-[120px] text-right">
+                Last Modified
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -43,7 +79,9 @@ export default function QuickView() {
                     <div className="bg-muted p-2 rounded-lg">
                       <doc.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="font-medium whitespace-normal break-words">{doc.name}</div>
+                    <div className="font-medium whitespace-normal break-words">
+                      {doc.name}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">{doc.lastModified}</TableCell>
