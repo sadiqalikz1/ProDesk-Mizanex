@@ -24,7 +24,6 @@ import {
   Mail,
   Calendar,
   Database,
-  Sheet,
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -69,14 +68,6 @@ export function AppSidebar() {
               <Link href="/">
                 <Home />
                 <span>Dashboard</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Spreadsheet">
-              <Link href="/spreadsheet">
-                <Sheet />
-                <span>Spreadsheet</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
