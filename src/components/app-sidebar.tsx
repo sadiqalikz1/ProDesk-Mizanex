@@ -15,6 +15,7 @@ import {
   Database,
   Users,
   Settings,
+  PanelLeft,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -71,6 +72,12 @@ export function AppSidebar() {
             <SidebarMenuButton href="#">
               <Settings />
               Settings
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <PanelLeft />
+              Collapse
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
