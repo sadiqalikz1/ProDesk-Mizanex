@@ -76,7 +76,7 @@ export function AppSidebar() {
                   <span>External Apps</span>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent side="right" align="start">
                 {appLinks.map((link) => (
                   <DropdownMenuItem key={link.name} asChild>
                     <a
