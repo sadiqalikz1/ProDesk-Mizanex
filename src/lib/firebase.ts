@@ -6,16 +6,15 @@ import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyCifdry6_FMd-DRTZqe2cVZ1mcKijyRxiE",
   authDomain: "prodesk-mizanex.firebaseapp.com",
-  databaseURL: "https://prodesk-mizanex-default-rtdb.firebaseio.com/",
+  databaseURL: "https://prodesk-mizanex-default-rtdb.firebaseio.com",
   projectId: "prodesk-mizanex",
   storageBucket: "prodesk-mizanex.appspot.com",
-  messagingSenderId: "99359146536",
-  appId: "1:99359146536:web:1c3e381ad7f52de20a84b0",
-  measurementId: "G-RFR5P3XG02"
+  messagingSenderId: "798483829998",
+  appId: "1:798483829998:web:395b81d611902783e38fff",
+  measurementId: "G-W8Z3RSME25"
 };
 
 // Initialize Firebase
