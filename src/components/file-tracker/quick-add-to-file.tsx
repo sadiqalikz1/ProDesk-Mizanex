@@ -79,6 +79,22 @@ export default function QuickAddToFile() {
       return;
     }
 
+    if (docNumber) {
+        const history = entry.locationHistory || [];
+        const isDuplicate = history.some(h => 
+            h.notes.startsWith('Added Doc:') && h.notes.includes(`#${docNumber} `)
+        );
+
+        if (isDuplicate) {
+            toast({
+                title: 'Duplicate Document Number',
+                description: `Document number "${docNumber}" already exists in this file's history.`,
+                variant: 'destructive',
+            });
+            return;
+        }
+    }
+
     const entryRef = ref(db, `entries/${selectedFileId}`);
     
     let constructedNotes = 'Added Doc: ';
@@ -115,13 +131,9 @@ export default function QuickAddToFile() {
     setDocNumber('');
     setNotes('');
     
-    // Position will be recalculated by useEffect
-    const selectedEntry = entries.find((e) => e.id === selectedFileId);
-     if (selectedEntry) {
-        const history = updatedHistory || [];
-        const docCount = history.filter(h => h.notes.startsWith('Added Doc:')).length;
-        setDocPosition((docCount + 1).toString());
-      }
+    // Position will be recalculated by useEffect, need to manually trigger update to entries state
+    const updatedEntries = entries.map(e => e.id === selectedFileId ? {...e, locationHistory: updatedHistory} : e);
+    setEntries(updatedEntries);
   };
 
   const fileOptions = entries.map((entry) => ({
