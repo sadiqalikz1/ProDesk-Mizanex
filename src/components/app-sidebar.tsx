@@ -25,7 +25,6 @@ import {
   Calendar,
   Database,
   FileArchive,
-  History,
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -78,14 +77,6 @@ export function AppSidebar() {
               <Link href="/physical-file-tracker">
                 <FileArchive />
                 <span>File Tracker</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="File History">
-              <Link href="/file-history">
-                <History />
-                <span>File History</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

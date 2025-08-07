@@ -100,17 +100,12 @@ export default function PhysicalFileTracker() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Physical File Tracker</CardTitle>
+              <CardTitle>Physical File List</CardTitle>
               <CardDescription>
                 A log of all physical documents and their locations.
               </CardDescription>
             </div>
-            <Button onClick={() => setAddEntryDialogOpen(true)}>
-              Create New File
-            </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="w-full h-[60vh] overflow-auto">
@@ -176,7 +171,7 @@ export default function PhysicalFileTracker() {
                           >
                             <Archive className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="View History (coming soon)">
+                          <Button variant="ghost" size="icon" title="View History (coming soon)" disabled>
                               <History className="h-4 w-4" />
                           </Button>
                         </div>

@@ -8,6 +8,9 @@ import {
 } from '@/components/ui/sidebar';
 import QuickAddToFile from '@/components/file-tracker/quick-add-to-file';
 import { CreateFile } from '@/components/file-tracker/create-file';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PhysicalFileTracker from '@/components/file-tracker/physical-file-tracker';
+import FileLog from '@/components/file-tracker/file-log';
 
 export default function PhysicalFileTrackerPage() {
   return (
@@ -22,6 +25,18 @@ export default function PhysicalFileTrackerPage() {
             <div className="space-y-8">
               <CreateFile />
               <QuickAddToFile />
+              <Tabs defaultValue="file-list">
+                <TabsList>
+                  <TabsTrigger value="file-list">File List</TabsTrigger>
+                  <TabsTrigger value="history-log">History Log</TabsTrigger>
+                </TabsList>
+                <TabsContent value="file-list">
+                  <PhysicalFileTracker />
+                </TabsContent>
+                <TabsContent value="history-log">
+                  <FileLog />
+                </TabsContent>
+              </Tabs>
             </div>
           </main>
         </SidebarInset>

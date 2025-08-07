@@ -28,7 +28,7 @@ type HistoryEntry = {
   history: LocationHistory;
 };
 
-export default function FileHistoryTracker() {
+export default function FileLog() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
