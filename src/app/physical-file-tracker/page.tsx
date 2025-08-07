@@ -23,7 +23,14 @@ export default function PhysicalFileTrackerPage() {
           <Header />
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
             <div className="mx-auto max-w-7xl space-y-8">
-              <QuickAddToFile />
+              <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
+                <div className="md:col-span-1">
+                  <CreateFile />
+                </div>
+                <div className="md:col-span-2">
+                  <QuickAddToFile />
+                </div>
+              </div>
               <Tabs defaultValue="file-list">
                 <TabsList>
                   <TabsTrigger value="file-list">File List</TabsTrigger>
