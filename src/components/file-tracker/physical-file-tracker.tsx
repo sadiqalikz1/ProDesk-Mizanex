@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 
 import { AddEntryDialog } from './add-entry-dialog';
 import { EditEntryDialog } from './edit-entry-dialog';
@@ -36,6 +37,7 @@ import { Entry } from './types';
 
 export default function PhysicalFileTracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddEntryDialogOpen, setAddEntryDialogOpen] = useState(false);
   const [isEditEntryDialogOpen, setEditEntryDialogOpen] = useState(false);
   const [isUpdateFileDialogOpen, setUpdateFileDialogOpen] = useState(false);
@@ -60,6 +62,23 @@ export default function PhysicalFileTracker() {
 
     return () => unsubscribe();
   }, []);
+
+  const filteredEntries = useMemo(() => {
+    if (!searchTerm) return entries;
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return entries.filter((entry) => {
+      const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
+      return (
+        entry.fileNo?.toLowerCase().includes(lowercasedTerm) ||
+        entry.fileType?.toLowerCase().includes(lowercasedTerm) ||
+        entry.company?.toLowerCase().includes(lowercasedTerm) ||
+        entry.owner?.toLowerCase().includes(lowercasedTerm) ||
+        entry.status?.toLowerCase().includes(lowercasedTerm) ||
+        location.toLowerCase().includes(lowercasedTerm)
+      );
+    });
+  }, [searchTerm, entries]);
 
   const handleEdit = (entry: Entry) => {
     setSelectedEntry(entry);
@@ -103,13 +122,19 @@ export default function PhysicalFileTracker() {
     <>
     <Card>
       <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <CardTitle>Physical File List</CardTitle>
                 <CardDescription>
                   A log of all physical documents and their locations.
                 </CardDescription>
               </div>
+              <Input
+                placeholder="Find in file list..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
           </div>
       </CardHeader>
       <CardContent>
@@ -128,7 +153,7 @@ export default function PhysicalFileTracker() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {entries.map((entry) => {
+              {filteredEntries.map((entry) => {
                 const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
                 return (
                   <TableRow key={entry.id}>
