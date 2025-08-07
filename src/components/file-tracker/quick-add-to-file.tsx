@@ -43,12 +43,6 @@ export default function QuickAddToFile() {
   
   const handleFileSelect = (fileId: string) => {
       setSelectedFileId(fileId);
-      const selectedEntry = entries.find(e => e.id === fileId);
-      if (selectedEntry) {
-          setNotes(`Added new document to file for ${selectedEntry.company}: `);
-      } else {
-          setNotes('Added new document: ');
-      }
   }
 
   const handleAddToHistory = async () => {
