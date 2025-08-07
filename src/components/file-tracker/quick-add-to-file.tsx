@@ -44,6 +44,19 @@ export default function QuickAddToFile() {
     return () => unsubscribe();
   }, []);
   
+  useEffect(() => {
+    if (selectedFileId) {
+      const selectedEntry = entries.find((e) => e.id === selectedFileId);
+      if (selectedEntry) {
+        const history = selectedEntry.locationHistory || [];
+        const docCount = history.filter(h => h.notes.startsWith('Added Doc:')).length;
+        setDocPosition((docCount + 1).toString());
+      }
+    } else {
+        setDocPosition('');
+    }
+  }, [selectedFileId, entries]);
+
   const handleFileSelect = (fileId: string) => {
       setSelectedFileId(fileId);
   }
@@ -73,10 +86,10 @@ export default function QuickAddToFile() {
     if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;
     if (notes) constructedNotes += `- ${notes}`;
 
-    if (!docNumber && !notes && !docPosition) {
+    if (!docNumber && !notes) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide a document number, position, or notes.',
+        description: 'Please provide a document number or notes.',
         variant: 'destructive',
       });
       return;
@@ -98,10 +111,17 @@ export default function QuickAddToFile() {
       description: `Successfully added a new entry to the history of file ${entry.fileNo}.`,
     });
 
-    setSelectedFileId('');
+    // Keep file selected, but clear other fields
     setDocNumber('');
-    setDocPosition('');
     setNotes('');
+    
+    // Position will be recalculated by useEffect
+    const selectedEntry = entries.find((e) => e.id === selectedFileId);
+     if (selectedEntry) {
+        const history = updatedHistory || [];
+        const docCount = history.filter(h => h.notes.startsWith('Added Doc:')).length;
+        setDocPosition((docCount + 1).toString());
+      }
   };
 
   const fileOptions = entries.map((entry) => ({
@@ -142,8 +162,9 @@ export default function QuickAddToFile() {
             <Input
               id="quick-doc-position"
               value={docPosition}
-              onChange={(e) => setDocPosition(e.target.value)}
-              placeholder="e.g., Front, back, after pg 5"
+              readOnly
+              className="bg-muted"
+              placeholder="Auto-generated"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
@@ -156,7 +177,7 @@ export default function QuickAddToFile() {
             />
           </div>
           <div className="md:col-span-2">
-            <Button onClick={handleAddToHistory} className="w-full">
+            <Button onClick={handleAddToHistory} className="w-full" disabled={!selectedFileId}>
               Add to History
             </Button>
           </div>
