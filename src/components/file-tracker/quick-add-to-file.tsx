@@ -131,8 +131,8 @@ export default function QuickAddToFile() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-          <div className="md:col-span-2 space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="space-y-2">
             <Label htmlFor="quick-file-select">Find File by Reference #</Label>
             <Combobox
               options={fileOptions}
@@ -160,7 +160,7 @@ export default function QuickAddToFile() {
               placeholder="e.g., INV-123"
             />
           </div>
-          <div className="md:col-span-2 space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="quick-notes">Description/Notes</Label>
             <Input
               id="quick-notes"
@@ -169,7 +169,7 @@ export default function QuickAddToFile() {
               placeholder="e.g., Paid in full"
             />
           </div>
-          <div className="md:col-span-6">
+          <div className="md:col-span-2">
             <Button onClick={handleAddToHistory} className="w-full">
               Add to History
             </Button>
