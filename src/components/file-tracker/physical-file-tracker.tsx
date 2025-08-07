@@ -116,7 +116,7 @@ export default function PhysicalFileTracker() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference #</TableHead>
+                <TableHead>File Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Room</TableHead>
@@ -125,7 +125,7 @@ export default function PhysicalFileTracker() {
                 <TableHead>Owner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Moved</TableHead>
-                <TableHead>Notes</TableHead>
+                <TableHead className="w-[200px]">Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
