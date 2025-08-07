@@ -98,7 +98,6 @@ export default function PhysicalFileTracker() {
 
   return (
     <>
-    <div className="w-[90%] mx-auto">
     <Card>
       <CardHeader>
           <div className="flex justify-between items-center">
@@ -189,7 +188,6 @@ export default function PhysicalFileTracker() {
         </div>
       </CardContent>
     </Card>
-    </div>
 
       <AddEntryDialog
         isOpen={isAddEntryDialogOpen}
