@@ -22,6 +22,7 @@ export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   const [docNumber, setDocNumber] = useState('');
+  const [docPosition, setDocPosition] = useState('');
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
 
@@ -69,12 +70,13 @@ export default function QuickAddToFile() {
     
     let constructedNotes = 'Added Doc: ';
     if (docNumber) constructedNotes += `#${docNumber} `;
+    if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;
     if (notes) constructedNotes += `- ${notes}`;
 
-    if (constructedNotes === 'Added Doc: ') {
+    if (!docNumber && !notes && !docPosition) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide a document number or notes.',
+        description: 'Please provide a document number, position, or notes.',
         variant: 'destructive',
       });
       return;
@@ -98,6 +100,7 @@ export default function QuickAddToFile() {
 
     setSelectedFileId('');
     setDocNumber('');
+    setDocPosition('');
     setNotes('');
   };
 
@@ -116,7 +119,7 @@ export default function QuickAddToFile() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="quick-file-select">Find File by Reference #</Label>
             <Combobox
               options={fileOptions}
@@ -132,6 +135,15 @@ export default function QuickAddToFile() {
               value={docNumber}
               onChange={(e) => setDocNumber(e.target.value)}
               placeholder="e.g., INV-123"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quick-doc-position">Document Position</Label>
+            <Input
+              id="quick-doc-position"
+              value={docPosition}
+              onChange={(e) => setDocPosition(e.target.value)}
+              placeholder="e.g., Front, back, after pg 5"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
