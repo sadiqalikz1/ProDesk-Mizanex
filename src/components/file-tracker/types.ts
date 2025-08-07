@@ -17,6 +17,7 @@ export type Entry = {
   owner: string;
   roomNo: string;
   rackNo: string;
+  shelfNo: string;
   boxNo: string;
   status: string;
   locationHistory: LocationHistory[];

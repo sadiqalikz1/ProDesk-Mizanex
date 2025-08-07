@@ -170,11 +170,19 @@ export function EditEntryDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rackNo">Rack/Shelf Number</Label>
+            <Label htmlFor="rackNo">Rack Number</Label>
             <Input
               id="rackNo"
               value={editedEntry.rackNo}
               onChange={(e) => handleChange('rackNo', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="shelfNo">Shelf Number</Label>
+            <Input
+              id="shelfNo"
+              value={editedEntry.shelfNo}
+              onChange={(e) => handleChange('shelfNo', e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -185,7 +193,7 @@ export function EditEntryDialog({
               onChange={(e) => handleChange('boxNo', e.target.value)}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="status">Status</Label>
             <Select
               value={editedEntry.status}

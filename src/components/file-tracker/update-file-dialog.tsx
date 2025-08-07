@@ -62,7 +62,7 @@ export function UpdateFileDialog({
     
     const newHistoryEntry: LocationHistory = {
       date: new Date().toISOString(),
-      location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Box: ${entry.boxNo}`,
+      location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Shelf: ${entry.shelfNo}, Box: ${entry.boxNo}`,
       status: status,
       updatedBy: updatedBy,
       notes: notes,

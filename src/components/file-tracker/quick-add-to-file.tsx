@@ -113,7 +113,7 @@ export default function QuickAddToFile() {
 
     const newHistoryEntry: LocationHistory = {
       date: new Date().toISOString(),
-      location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Box: ${entry.boxNo}`,
+      location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Shelf: ${entry.shelfNo}, Box: ${entry.boxNo}`,
       status: entry.status,
       updatedBy: 'System Quick Add',
       notes: constructedNotes,

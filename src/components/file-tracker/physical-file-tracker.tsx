@@ -108,7 +108,7 @@ export default function PhysicalFileTracker() {
             </div>
         </CardHeader>
         <CardContent>
-          <div className="w-full h-[60vh] overflow-auto">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -117,11 +117,12 @@ export default function PhysicalFileTracker() {
                   <TableHead>Company</TableHead>
                   <TableHead>Room</TableHead>
                   <TableHead>Rack</TableHead>
+                  <TableHead>Shelf</TableHead>
                   <TableHead>Box</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Moved</TableHead>
-                  <TableHead className="w-[200px]">Notes</TableHead>
+                  <TableHead className="min-w-[200px]">Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -135,6 +136,7 @@ export default function PhysicalFileTracker() {
                       <TableCell>{entry.company}</TableCell>
                       <TableCell>{entry.roomNo}</TableCell>
                       <TableCell>{entry.rackNo}</TableCell>
+                      <TableCell>{entry.shelfNo}</TableCell>
                       <TableCell>{entry.boxNo}</TableCell>
                       <TableCell>{entry.owner}</TableCell>
                       <TableCell>

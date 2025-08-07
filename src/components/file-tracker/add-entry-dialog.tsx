@@ -34,6 +34,7 @@ const INITIAL_STATE = {
   owner: '',
   roomNo: '',
   rackNo: '',
+  shelfNo: '',
   boxNo: '',
   status: 'In Storage',
   locationHistory: [],
@@ -90,7 +91,7 @@ export function AddEntryDialog({
     
     const initialHistory: LocationHistory = {
       date: new Date().toISOString(),
-      location: `Room: ${newEntry.roomNo}, Rack: ${newEntry.rackNo}, Box: ${newEntry.boxNo}`,
+      location: `Room: ${newEntry.roomNo}, Rack: ${newEntry.rackNo}, Shelf: ${newEntry.shelfNo}, Box: ${newEntry.boxNo}`,
       status: 'Created',
       updatedBy: newEntry.owner,
       notes: `File created with description: ${newEntry.description}`
@@ -192,11 +193,19 @@ export function AddEntryDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rackNo">Rack/Shelf Number</Label>
+            <Label htmlFor="rackNo">Rack Number</Label>
             <Input
               id="rackNo"
               value={newEntry.rackNo}
               onChange={(e) => handleChange('rackNo', e.target.value)}
+            />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="shelfNo">Shelf Number</Label>
+            <Input
+              id="shelfNo"
+              value={newEntry.shelfNo}
+              onChange={(e) => handleChange('shelfNo', e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -207,7 +216,7 @@ export function AddEntryDialog({
               onChange={(e) => handleChange('boxNo', e.target.value)}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="status">Status</Label>
             <Select
               value={newEntry.status}
