@@ -46,6 +46,7 @@ export default function FileLog() {
           const parentFile = {
             id: key,
             fileNo: entryData.fileNo,
+            fileType: entryData.fileType,
             company: entryData.company,
             roomNo: entryData.roomNo,
             rackNo: entryData.rackNo,
@@ -75,6 +76,7 @@ export default function FileLog() {
     return history.filter(({ parentFile, history }) => {
       return (
         parentFile.fileNo?.toLowerCase().includes(lowercasedTerm) ||
+        parentFile.fileType?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.company?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.roomNo?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.rackNo?.toLowerCase().includes(lowercasedTerm) ||
@@ -160,6 +162,7 @@ export default function FileLog() {
             <TableHeader>
               <TableRow>
                 <TableHead>File Name</TableHead>
+                <TableHead>File Type</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Rack</TableHead>
@@ -180,6 +183,7 @@ export default function FileLog() {
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
+                    <TableCell>{item.parentFile.fileType}</TableCell>
                     <TableCell>{item.parentFile.company}</TableCell>
                     <TableCell>{location.room}</TableCell>
                     <TableCell>{location.rack}</TableCell>
