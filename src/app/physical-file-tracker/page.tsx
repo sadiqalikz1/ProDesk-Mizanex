@@ -23,7 +23,6 @@ export default function PhysicalFileTrackerPage() {
           <Header />
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
             <div className="mx-auto max-w-7xl space-y-8">
-              <CreateFile />
               <QuickAddToFile />
               <Tabs defaultValue="file-list">
                 <TabsList>

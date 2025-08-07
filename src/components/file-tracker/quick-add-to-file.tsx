@@ -149,17 +149,17 @@ export default function QuickAddToFile() {
           Quickly add a note or document to an existing file's history.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="quick-file-select">Find File by Reference #</Label>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+            <Label htmlFor="quick-file-select">Select a file...</Label>
             <Combobox
               options={fileOptions}
               value={selectedFileId}
               onChange={handleFileSelect}
               placeholder="Select a file..."
             />
-          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div className="space-y-2">
             <Label htmlFor="quick-doc-number">Doc Number</Label>
             <Input
@@ -179,7 +179,8 @@ export default function QuickAddToFile() {
               placeholder="Auto-generated"
             />
           </div>
-          <div className="space-y-2 md:col-span-2">
+        </div>
+         <div className="space-y-2">
             <Label htmlFor="quick-notes">Description/Notes</Label>
             <Input
               id="quick-notes"
@@ -188,11 +189,10 @@ export default function QuickAddToFile() {
               placeholder="e.g., Paid in full"
             />
           </div>
-          <div className="md:col-span-2">
+        <div>
             <Button onClick={handleAddToHistory} className="w-full" disabled={!selectedFileId}>
               Add to History
             </Button>
-          </div>
         </div>
       </CardContent>
     </Card>

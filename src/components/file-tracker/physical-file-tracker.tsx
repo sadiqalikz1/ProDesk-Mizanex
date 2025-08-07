@@ -27,6 +27,7 @@ import { EditEntryDialog } from './edit-entry-dialog';
 import { UpdateFileDialog } from './update-file-dialog';
 import { CloseFileDialog } from './close-file-dialog';
 import { Entry } from './types';
+import { CreateFile } from './create-file';
 
 export default function PhysicalFileTracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -100,11 +101,14 @@ export default function PhysicalFileTracker() {
     <>
       <Card>
         <CardHeader>
-            <div>
-              <CardTitle>Physical File List</CardTitle>
-              <CardDescription>
-                A log of all physical documents and their locations.
-              </CardDescription>
+            <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Physical File List</CardTitle>
+                  <CardDescription>
+                    A log of all physical documents and their locations.
+                  </CardDescription>
+                </div>
+                <CreateFile />
             </div>
         </CardHeader>
         <CardContent>
