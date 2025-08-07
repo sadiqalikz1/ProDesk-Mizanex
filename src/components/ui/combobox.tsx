@@ -3,7 +3,6 @@
 
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
-import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -40,14 +39,7 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("")
 
   const handleSelect = (currentValue: string) => {
-    const option = options.find(
-      (opt) => opt.value.toLowerCase() === currentValue.toLowerCase()
-    );
-    if (option) {
-      onChange(option.value);
-    } else {
-      onChange(currentValue);
-    }
+    onChange(currentValue);
     setOpen(false)
   }
 
