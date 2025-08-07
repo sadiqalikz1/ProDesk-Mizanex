@@ -120,7 +120,7 @@ export function AddEntryDialog({
     if (!newEntry.fileNo || !newEntry.fileType || !newEntry.company) {
       toast({
         title: 'Missing Fields',
-        description: 'Please fill out Reference #, File Type, and Company.',
+        description: 'Please fill out File Name, File Type, and Company.',
         variant: 'destructive',
       });
       return;
@@ -186,7 +186,7 @@ export function AddEntryDialog({
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="fileNo">Reference #</Label>
+              <Label htmlFor="fileNo">File Name</Label>
               <Input
                 id="fileNo"
                 value={newEntry.fileNo}

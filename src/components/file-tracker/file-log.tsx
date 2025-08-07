@@ -139,7 +139,7 @@ export default function FileLog() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>File Ref #</TableHead>
+                <TableHead>File Name</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Rack</TableHead>
