@@ -116,10 +116,24 @@ export default function FileLog() {
     };
   };
 
-  const getDocPosition = (notes: string) => {
-    if (!notes.includes('Added Doc:')) return 'N/A';
-    const match = notes.match(/\(Pos: (\d+)\)/);
-    return match ? match[1] : 'N/A';
+  const getDocInfo = (notes: string) => {
+    if (!notes.startsWith('Added Doc:')) {
+      return { docNumber: 'N/A', docPosition: 'N/A', remainingNotes: notes };
+    }
+    
+    const docNumberMatch = notes.match(/#(\S+)/);
+    const docPositionMatch = notes.match(/\(Pos: (\d+)\)/);
+    
+    const docNumber = docNumberMatch ? docNumberMatch[1] : 'N/A';
+    const docPosition = docPositionMatch ? docPositionMatch[1] : 'N/A';
+    
+    // Remove the extracted parts to get remaining notes
+    const remainingNotes = notes.replace(/Added Doc: #\S+ \s?/, '')
+                                .replace(/\(Pos: \d+\)\s?/, '')
+                                .replace(/^- /, '')
+                                .trim();
+
+    return { docNumber, docPosition, remainingNotes: remainingNotes || 'N/A' };
   }
 
   return (
@@ -152,6 +166,7 @@ export default function FileLog() {
                 <TableHead>Shelf</TableHead>
                 <TableHead>Box</TableHead>
                 <TableHead>Doc Position</TableHead>
+                <TableHead>Document #</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
                 <TableHead>Date</TableHead>
@@ -161,7 +176,7 @@ export default function FileLog() {
             <TableBody>
               {filteredHistory.map((item, index) => {
                 const location = parseLocation(item.history.location);
-                const docPosition = getDocPosition(item.history.notes);
+                const { docPosition, docNumber, remainingNotes } = getDocInfo(item.history.notes);
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
@@ -171,6 +186,7 @@ export default function FileLog() {
                     <TableCell>{location.shelf}</TableCell>
                     <TableCell>{location.box}</TableCell>
                     <TableCell>{docPosition}</TableCell>
+                    <TableCell>{docNumber}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(item.history.status)}>
                         {item.history.status}
@@ -178,7 +194,7 @@ export default function FileLog() {
                     </TableCell>
                     <TableCell>{item.history.updatedBy}</TableCell>
                     <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
-                    <TableCell>{item.history.notes}</TableCell>
+                    <TableCell>{remainingNotes}</TableCell>
                   </TableRow>
                 )
               })}
