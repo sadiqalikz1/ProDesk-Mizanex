@@ -22,7 +22,6 @@ export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   const [notes, setNotes] = useState('');
-  const [updatedBy, setUpdatedBy] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,14 +43,19 @@ export default function QuickAddToFile() {
   
   const handleFileSelect = (fileId: string) => {
       setSelectedFileId(fileId);
-      setNotes('Added new document: ');
+      const selectedEntry = entries.find(e => e.id === fileId);
+      if (selectedEntry) {
+          setNotes(`Added new document to file for ${selectedEntry.company}: `);
+      } else {
+          setNotes('Added new document: ');
+      }
   }
 
   const handleAddToHistory = async () => {
-    if (!selectedFileId || !notes || !updatedBy) {
+    if (!selectedFileId || !notes) {
       toast({
         title: 'Missing Fields',
-        description: 'Please select a file, enter notes, and your name.',
+        description: 'Please select a file and enter notes.',
         variant: 'destructive',
       });
       return;
@@ -70,7 +74,7 @@ export default function QuickAddToFile() {
       date: new Date().toISOString(),
       location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Box: ${entry.boxNo}`,
       status: entry.status,
-      updatedBy,
+      updatedBy: 'System Quick Add',
       notes,
     };
 
@@ -84,7 +88,6 @@ export default function QuickAddToFile() {
 
     setSelectedFileId('');
     setNotes('');
-    setUpdatedBy('');
   };
 
   const fileOptions = entries.map((entry) => ({
@@ -101,7 +104,7 @@ export default function QuickAddToFile() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="md:col-span-1 space-y-2">
             <Label htmlFor="quick-file-select">Find File by Reference #</Label>
             <Combobox
@@ -109,15 +112,6 @@ export default function QuickAddToFile() {
               value={selectedFileId}
               onChange={handleFileSelect}
               placeholder="Select a file..."
-            />
-          </div>
-          <div className="md:col-span-1 space-y-2">
-            <Label htmlFor="quick-updated-by">Your Name</Label>
-            <Input
-              id="quick-updated-by"
-              value={updatedBy}
-              onChange={(e) => setUpdatedBy(e.target.value)}
-              placeholder="Enter your name"
             />
           </div>
           <div className="md:col-span-1 space-y-2">
