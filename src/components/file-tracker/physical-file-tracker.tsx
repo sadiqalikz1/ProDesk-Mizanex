@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -20,7 +19,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, History, Archive, ArrowDownUp } from 'lucide-react';
+import { Edit, History, Archive, ArrowDownUp, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { AddEntryDialog } from './add-entry-dialog';
 import { EditEntryDialog } from './edit-entry-dialog';
@@ -124,7 +129,7 @@ export default function PhysicalFileTracker() {
                 <TableHead>Owner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Moved</TableHead>
-                <TableHead className="min-w-[200px]">Notes</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -133,7 +138,7 @@ export default function PhysicalFileTracker() {
                 const { lastMoved, notes } = getLatestHistory(entry);
                 return (
                   <TableRow key={entry.id}>
-                    <TableCell className="font-medium">{entry.fileNo}</TableCell>
+                    <TableCell className="font-medium whitespace-normal break-words">{entry.fileNo}</TableCell>
                     <TableCell>{entry.fileType}</TableCell>
                     <TableCell>{entry.company}</TableCell>
                     <TableCell>{entry.roomNo}</TableCell>
@@ -147,7 +152,7 @@ export default function PhysicalFileTracker() {
                       </Badge>
                     </TableCell>
                     <TableCell>{lastMoved}</TableCell>
-                    <TableCell>{notes}</TableCell>
+                    <TableCell className="whitespace-normal break-words">{notes}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -158,26 +163,31 @@ export default function PhysicalFileTracker() {
                         >
                           <ArrowDownUp className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(entry)}
-                          title="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleCloseFile(entry)}
-                          title="Close File"
-                          disabled={entry.status === 'Closed'}
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="View History (coming soon)" disabled>
-                            <History className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">More actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCloseFile(entry)}
+                              disabled={entry.status === 'Closed'}
+                            >
+                              <Archive className="mr-2 h-4 w-4" />
+                              <span>Close File</span>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem disabled>
+                               <History className="mr-2 h-4 w-4" />
+                               <span>View History</span>
+                             </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
