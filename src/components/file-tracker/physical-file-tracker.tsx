@@ -108,7 +108,6 @@ export default function PhysicalFileTracker() {
                     A log of all physical documents and their locations.
                   </CardDescription>
                 </div>
-                <CreateFile />
             </div>
         </CardHeader>
         <CardContent>

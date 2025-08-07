@@ -1,4 +1,5 @@
 
+
 import Header from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -24,6 +25,7 @@ export default function PhysicalFileTrackerPage() {
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
             <div className="mx-auto w-11/12 space-y-8">
               <div className="space-y-8">
+                <CreateFile />
                 <QuickAddToFile />
               </div>
               <Tabs defaultValue="file-list">
