@@ -1,3 +1,4 @@
+
 import Header from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -5,8 +6,8 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import PhysicalFileTracker from '@/components/physical-file-tracker';
-import QuickAddToFile from '@/components/quick-add-to-file';
+import PhysicalFileTracker from '@/components/file-tracker/physical-file-tracker';
+import QuickAddToFile from '@/components/file-tracker/quick-add-to-file';
 
 export default function PhysicalFileTrackerPage() {
   return (
