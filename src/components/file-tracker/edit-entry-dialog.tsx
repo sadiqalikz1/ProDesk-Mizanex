@@ -166,7 +166,7 @@ export function EditEntryDialog({
             <Label htmlFor="fileNo">Reference #</Label>
             <Input
               id="fileNo"
-              value={editedEntry.fileNo}
+              value={editedEntry.fileNo || ''}
               onChange={(e) => handleChange('fileNo', e.target.value)}
             />
           </div>
@@ -174,7 +174,7 @@ export function EditEntryDialog({
             <Label htmlFor="fileType">File Type</Label>
             <Combobox
               options={docTypes.map((t) => ({ value: t, label: t }))}
-              value={editedEntry.fileType}
+              value={editedEntry.fileType || ''}
               onChange={(value) => handleChange('fileType', value)}
               placeholder="Select or create type..."
               createLabel="Create new type"
@@ -185,7 +185,7 @@ export function EditEntryDialog({
             <Label htmlFor="company">Company/Department</Label>
              <Combobox
               options={companies.map((c) => ({ value: c, label: c }))}
-              value={editedEntry.company}
+              value={editedEntry.company || ''}
               onChange={(value) => handleChange('company', value)}
               placeholder="Select or create company..."
               createLabel="Create new company"
@@ -196,7 +196,7 @@ export function EditEntryDialog({
             <Label htmlFor="owner">Person Responsible/Owner</Label>
             <Input
               id="owner"
-              value={editedEntry.owner}
+              value={editedEntry.owner || ''}
               onChange={(e) => handleChange('owner', e.target.value)}
             />
           </div>
@@ -204,7 +204,7 @@ export function EditEntryDialog({
             <Label htmlFor="description">Description/Notes</Label>
             <Input
               id="description"
-              value={editedEntry.description}
+              value={editedEntry.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
             />
           </div>
@@ -212,7 +212,7 @@ export function EditEntryDialog({
             <Label htmlFor="roomNo">Room Number</Label>
             <Input
               id="roomNo"
-              value={editedEntry.roomNo}
+              value={editedEntry.roomNo || ''}
               onChange={(e) => handleChange('roomNo', e.target.value)}
             />
           </div>
@@ -220,7 +220,7 @@ export function EditEntryDialog({
             <Label htmlFor="rackNo">Rack Number</Label>
             <Input
               id="rackNo"
-              value={editedEntry.rackNo}
+              value={editedEntry.rackNo || ''}
               onChange={(e) => handleChange('rackNo', e.target.value)}
             />
           </div>
@@ -228,7 +228,7 @@ export function EditEntryDialog({
             <Label htmlFor="shelfNo">Shelf Number</Label>
             <Input
               id="shelfNo"
-              value={editedEntry.shelfNo}
+              value={editedEntry.shelfNo || ''}
               onChange={(e) => handleChange('shelfNo', e.target.value)}
             />
           </div>
@@ -236,7 +236,7 @@ export function EditEntryDialog({
             <Label htmlFor="boxNo">Box/Folder Number</Label>
             <Input
               id="boxNo"
-              value={editedEntry.boxNo}
+              value={editedEntry.boxNo || ''}
               onChange={(e) => handleChange('boxNo', e.target.value)}
             />
           </div>
