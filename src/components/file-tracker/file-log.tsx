@@ -116,6 +116,12 @@ export default function FileLog() {
     };
   };
 
+  const getDocPosition = (notes: string) => {
+    if (!notes.includes('Added Doc:')) return 'N/A';
+    const match = notes.match(/\(Pos: (\d+)\)/);
+    return match ? match[1] : 'N/A';
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -145,6 +151,7 @@ export default function FileLog() {
                 <TableHead>Rack</TableHead>
                 <TableHead>Shelf</TableHead>
                 <TableHead>Box</TableHead>
+                <TableHead>Doc Position</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
                 <TableHead>Date</TableHead>
@@ -154,6 +161,7 @@ export default function FileLog() {
             <TableBody>
               {filteredHistory.map((item, index) => {
                 const location = parseLocation(item.history.location);
+                const docPosition = getDocPosition(item.history.notes);
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
@@ -162,6 +170,7 @@ export default function FileLog() {
                     <TableCell>{location.rack}</TableCell>
                     <TableCell>{location.shelf}</TableCell>
                     <TableCell>{location.box}</TableCell>
+                    <TableCell>{docPosition}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(item.history.status)}>
                         {item.history.status}
