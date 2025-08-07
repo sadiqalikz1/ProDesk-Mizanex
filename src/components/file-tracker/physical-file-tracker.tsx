@@ -113,7 +113,7 @@ export default function PhysicalFileTracker() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="w-full h-[60vh] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
