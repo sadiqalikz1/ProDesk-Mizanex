@@ -122,10 +122,7 @@ export default function PhysicalFileTracker() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Rack</TableHead>
-                <TableHead>Shelf</TableHead>
-                <TableHead>Box</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Moved</TableHead>
@@ -135,15 +132,13 @@ export default function PhysicalFileTracker() {
             <TableBody>
               {entries.map((entry) => {
                 const { lastMoved } = getLatestHistory(entry);
+                const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
                 return (
                   <TableRow key={entry.id}>
                     <TableCell className="font-medium whitespace-normal break-words">{entry.fileNo}</TableCell>
                     <TableCell>{entry.fileType}</TableCell>
                     <TableCell>{entry.company}</TableCell>
-                    <TableCell>{entry.roomNo}</TableCell>
-                    <TableCell>{entry.rackNo}</TableCell>
-                    <TableCell>{entry.shelfNo}</TableCell>
-                    <TableCell>{entry.boxNo}</TableCell>
+                    <TableCell>{location}</TableCell>
                     <TableCell>{entry.owner}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(entry.status)}>
