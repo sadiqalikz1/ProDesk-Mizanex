@@ -12,13 +12,13 @@ import {
 export default function Home() {
   return (
     <SidebarProvider>
-      <div className="relative flex min-h-screen w-full">
+      <div className="relative flex h-screen w-full flex-col">
         <Sidebar>
           <AppSidebar />
         </Sidebar>
         <SidebarInset>
           <Header />
-          <main className="flex-1 p-4 sm:px-6 sm:py-4">
+          <main className="flex-1 overflow-y-auto p-4 sm:px-6 sm:py-4">
             <div className="flex flex-col gap-4 md:gap-8 lg:flex-row">
               <div className="flex flex-col gap-4 md:gap-8 lg:w-2/3">
                 <NotePad />
