@@ -173,13 +173,12 @@ export default function FileLog() {
                 <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead className="min-w-[250px]">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredHistory.map((item, index) => {
                 const location = parseLocation(item.history.location);
-                const { docPosition, docNumber, remainingNotes } = getDocInfo(item.history.notes);
+                const { docPosition, docNumber } = getDocInfo(item.history.notes);
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
@@ -198,7 +197,6 @@ export default function FileLog() {
                     </TableCell>
                     <TableCell>{item.history.updatedBy}</TableCell>
                     <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
-                    <TableCell>{remainingNotes}</TableCell>
                   </TableRow>
                 )
               })}
