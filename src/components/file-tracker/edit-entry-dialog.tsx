@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { getDatabase, ref, update, get } from 'firebase/database';
+import { getDatabase, ref, update, get, push } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Dialog,
@@ -11,6 +11,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +47,11 @@ export function EditEntryDialog({
   const [editedEntry, setEditedEntry] = useState<Entry>(entry);
   const [companies, setCompanies] = useState<string[]>([]);
   const [docTypes, setDocTypes] = useState<string[]>([]);
+    const [confirmation, setConfirmation] = useState<{
+    type: 'company' | 'fileType' | null;
+    value: string;
+    open: boolean;
+  }>({ type: null, value: '', open: false });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,6 +78,32 @@ export function EditEntryDialog({
     setEditedEntry((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleConfirmCreate = (type: 'company' | 'fileType', value: string) => {
+    const existing = type === 'company' ? companies : docTypes;
+    if (existing.some(item => item.toLowerCase() === value.toLowerCase())) {
+        toast({
+            title: 'Duplicate Entry',
+            description: `"${value}" already exists.`,
+            variant: 'destructive',
+        });
+        return;
+    }
+    setConfirmation({ type, value, open: true });
+  }
+
+  const handleCreateConfirmed = () => {
+      if (confirmation.type && confirmation.value) {
+          if (confirmation.type === 'company') {
+              setCompanies(prev => [...prev, confirmation.value]);
+              handleChange('company', confirmation.value);
+          } else {
+              setDocTypes(prev => [...prev, confirmation.value]);
+              handleChange('fileType', confirmation.value);
+          }
+      }
+      setConfirmation({ type: null, value: '', open: false });
+  }
+
   const handleSave = async () => {
     if (!editedEntry.fileNo || !editedEntry.fileType || !editedEntry.company) {
       toast({
@@ -79,25 +120,28 @@ export function EditEntryDialog({
     // Create a deep copy to avoid modifying the state directly
     const entryToUpdate = { ...editedEntry };
     // Convert date back to string for Firebase
-    entryToUpdate.dateCreated = (entryToUpdate.dateCreated as Date).toISOString();
+    if (entryToUpdate.dateCreated instanceof Date) {
+        entryToUpdate.dateCreated = entryToUpdate.dateCreated.toISOString();
+    }
+
 
     // Firebase cannot store `id` within the object itself
     const { id, ...firebaseData } = entryToUpdate;
 
     await update(entryRef, firebaseData);
     
-     // Add company and docType if new
-    if (!companies.includes(editedEntry.company)) {
-        const newCompanyRef = ref(db, 'companies');
-        const newCompanies = [...companies, editedEntry.company];
-        await update(newCompanyRef, newCompanies);
-        setCompanies(newCompanies);
+    const dbCompaniesRef = ref(db, 'companies');
+    const dbDocTypesRef = ref(db, 'docTypes');
+    const currentCompaniesSnap = await get(dbCompaniesRef);
+    const currentCompanies = currentCompaniesSnap.exists() ? Object.values(currentCompaniesSnap.val()) : [];
+    if (!currentCompanies.some((c:any) => c.toLowerCase() === editedEntry.company.toLowerCase())) {
+        await push(dbCompaniesRef, editedEntry.company);
     }
-    if (!docTypes.includes(editedEntry.fileType)) {
-        const newDocTypeRef = ref(db, 'docTypes');
-        const newDocTypes = [...docTypes, editedEntry.fileType];
-        await update(newDocTypeRef, newDocTypes);
-        setDocTypes(newDocTypes);
+
+    const currentDocTypesSnap = await get(dbDocTypesRef);
+    const currentDocTypes = currentDocTypesSnap.exists() ? Object.values(currentDocTypesSnap.val()) : [];
+    if (!currentDocTypes.some((d:any) => d.toLowerCase() === editedEntry.fileType.toLowerCase())) {
+        await push(dbDocTypesRef, editedEntry.fileType);
     }
 
     toast({
@@ -108,6 +152,7 @@ export function EditEntryDialog({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -133,6 +178,7 @@ export function EditEntryDialog({
               onChange={(value) => handleChange('fileType', value)}
               placeholder="Select or create type..."
               createLabel="Create new type"
+              onConfirmCreate={(value) => handleConfirmCreate('fileType', value)}
             />
           </div>
           <div className="space-y-2">
@@ -143,6 +189,7 @@ export function EditEntryDialog({
               onChange={(value) => handleChange('company', value)}
               placeholder="Select or create company..."
               createLabel="Create new company"
+              onConfirmCreate={(value) => handleConfirmCreate('company', value)}
             />
           </div>
           <div className="space-y-2">
@@ -219,5 +266,20 @@ export function EditEntryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+     <AlertDialog open={confirmation.open} onOpenChange={(open) => !open && setConfirmation({type: null, value: '', open: false})}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Create new {confirmation.type === 'company' ? 'Company' : 'File Type'}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to create a new entry for "{confirmation.value}"?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateConfirmed}>Create</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

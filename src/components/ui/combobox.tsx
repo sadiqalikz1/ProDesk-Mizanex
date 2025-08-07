@@ -26,6 +26,7 @@ type ComboboxProps = {
   onChange: (value: string) => void
   placeholder?: string
   createLabel?: string
+  onConfirmCreate?: (value: string) => void
 }
 
 export function Combobox({
@@ -34,12 +35,20 @@ export function Combobox({
   onChange,
   placeholder = "Select an option...",
   createLabel,
+  onConfirmCreate,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
 
   const handleSelect = (currentValue: string) => {
-    onChange(currentValue);
+    const option = options.find(o => o.value.toLowerCase() === currentValue.toLowerCase());
+    if (option) {
+      onChange(option.value)
+    } else if (onConfirmCreate) {
+      onConfirmCreate(currentValue)
+    } else {
+      onChange(currentValue)
+    }
     setOpen(false)
   }
 
@@ -50,7 +59,7 @@ export function Combobox({
   const showCreateOption =
     createLabel &&
     inputValue &&
-    !filteredOptions.some(
+    !options.some(
       (option) => option.label.toLowerCase() === inputValue.toLowerCase()
     )
 
