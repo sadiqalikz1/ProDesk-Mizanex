@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { getDatabase, ref, onValue, set, update, push } from 'firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -84,6 +84,17 @@ export default function PhysicalFileTracker() {
         return 'default';
     }
   };
+  
+  const getLatestHistory = (entry: Entry) => {
+      if (!entry.locationHistory || entry.locationHistory.length === 0) {
+          return { lastMoved: 'N/A', notes: entry.description };
+      }
+      const latest = entry.locationHistory[entry.locationHistory.length - 1];
+      return {
+          lastMoved: new Date(latest.date).toLocaleDateString(),
+          notes: latest.notes,
+      }
+  }
 
   return (
     <>
@@ -108,67 +119,70 @@ export default function PhysicalFileTracker() {
                 <TableHead>Reference #</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Rack</TableHead>
                 <TableHead>Box</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last Moved</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {entries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="font-medium">{entry.fileNo}</TableCell>
-                  <TableCell>{entry.fileType}</TableCell>
-                  <TableCell>{entry.company}</TableCell>
-                  <TableCell>
-                    {entry.dateCreated.toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>{entry.roomNo}</TableCell>
-                  <TableCell>{entry.rackNo}</TableCell>
-                  <TableCell>{entry.boxNo}</TableCell>
-                  <TableCell>{entry.owner}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(entry.status)}>
-                      {entry.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUpdate(entry)}
-                        title="Update/Move"
-                      >
-                        <ArrowDownUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(entry)}
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleCloseFile(entry)}
-                        title="Close File"
-                        disabled={entry.status === 'Closed'}
-                      >
-                        <Archive className="h-4 w-4" />
-                      </Button>
-                       <Button variant="ghost" size="icon" title="View History (coming soon)">
-                          <History className="h-4 w-4" />
-                       </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {entries.map((entry) => {
+                const { lastMoved, notes } = getLatestHistory(entry);
+                return (
+                  <TableRow key={entry.id}>
+                    <TableCell className="font-medium">{entry.fileNo}</TableCell>
+                    <TableCell>{entry.fileType}</TableCell>
+                    <TableCell>{entry.company}</TableCell>
+                    <TableCell>{entry.roomNo}</TableCell>
+                    <TableCell>{entry.rackNo}</TableCell>
+                    <TableCell>{entry.boxNo}</TableCell>
+                    <TableCell>{entry.owner}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(entry.status)}>
+                        {entry.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{lastMoved}</TableCell>
+                    <TableCell>{notes}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                         <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleUpdate(entry)}
+                          title="Update/Move"
+                        >
+                          <ArrowDownUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(entry)}
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCloseFile(entry)}
+                          title="Close File"
+                          disabled={entry.status === 'Closed'}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                         <Button variant="ghost" size="icon" title="View History (coming soon)">
+                            <History className="h-4 w-4" />
+                         </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
