@@ -27,7 +27,6 @@ import { EditEntryDialog } from './edit-entry-dialog';
 import { UpdateFileDialog } from './update-file-dialog';
 import { CloseFileDialog } from './close-file-dialog';
 import { Entry } from './types';
-import { CreateFile } from './create-file';
 
 export default function PhysicalFileTracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
