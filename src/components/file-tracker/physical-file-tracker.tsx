@@ -138,9 +138,9 @@ export default function PhysicalFileTracker() {
           </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="w-full h-[70vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-card">
               <TableRow>
                 <TableHead>File Name</TableHead>
                 <TableHead>Type</TableHead>

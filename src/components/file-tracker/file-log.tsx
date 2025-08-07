@@ -48,10 +48,6 @@ export default function FileLog() {
             fileNo: entryData.fileNo,
             fileType: entryData.fileType,
             company: entryData.company,
-            roomNo: entryData.roomNo,
-            rackNo: entryData.rackNo,
-            shelfNo: entryData.shelfNo,
-            boxNo: entryData.boxNo,
             status: entryData.status,
           };
           if (entryData.locationHistory && Array.isArray(entryData.locationHistory)) {
@@ -139,12 +135,12 @@ export default function FileLog() {
       <CardContent>
         <div className="w-full h-[70vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-card">
               <TableRow>
                 <TableHead>File Name</TableHead>
                 <TableHead>File Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead className="w-[250px]">Location</TableHead>
+                <TableHead className="w-[300px]">Location</TableHead>
                 <TableHead>Doc Position</TableHead>
                 <TableHead>Document #</TableHead>
                 <TableHead>Status</TableHead>
