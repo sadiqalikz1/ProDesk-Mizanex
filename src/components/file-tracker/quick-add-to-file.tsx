@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getDatabase, ref, onValue, update, get } from 'firebase/database';
+import { getDatabase, ref, onValue, update } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -20,9 +20,7 @@ import { Combobox } from '@/components/ui/combobox';
 
 export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [docTypes, setDocTypes] = useState<string[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
-  const [docType, setDocType] = useState('');
   const [docNumber, setDocNumber] = useState('');
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
@@ -30,7 +28,6 @@ export default function QuickAddToFile() {
   useEffect(() => {
     const db = getDatabase(app);
     const entriesRef = ref(db, 'entries');
-    const docTypesRef = ref(db, 'docTypes');
 
     const unsubscribe = onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
@@ -41,12 +38,6 @@ export default function QuickAddToFile() {
           }))
         : [];
       setEntries(loadedEntries.filter(e => e.status !== 'Closed'));
-    });
-
-    get(docTypesRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setDocTypes(Object.values(snapshot.val()));
-      }
     });
 
     return () => unsubscribe();
@@ -77,14 +68,13 @@ export default function QuickAddToFile() {
     const entryRef = ref(db, `entries/${selectedFileId}`);
     
     let constructedNotes = 'Added Doc: ';
-    if (docType) constructedNotes += `${docType} `;
     if (docNumber) constructedNotes += `#${docNumber} `;
     if (notes) constructedNotes += `- ${notes}`;
 
     if (constructedNotes === 'Added Doc: ') {
       toast({
         title: 'Missing Information',
-        description: 'Please provide a document type, number, or notes.',
+        description: 'Please provide a document number or notes.',
         variant: 'destructive',
       });
       return;
@@ -107,7 +97,6 @@ export default function QuickAddToFile() {
     });
 
     setSelectedFileId('');
-    setDocType('');
     setDocNumber('');
     setNotes('');
   };
@@ -115,11 +104,6 @@ export default function QuickAddToFile() {
   const fileOptions = entries.map((entry) => ({
     value: entry.id,
     label: `${entry.fileNo} - ${entry.company}`,
-  }));
-  
-  const docTypeOptions = docTypes.map((type) => ({
-    value: type,
-    label: type,
   }));
 
   return (
@@ -141,16 +125,6 @@ export default function QuickAddToFile() {
               placeholder="Select a file..."
             />
           </div>
-          <div className="space-y-2">
-             <Label htmlFor="quick-doc-type">Document Type</Label>
-            <Combobox
-              options={docTypeOptions}
-              value={docType}
-              onChange={setDocType}
-              placeholder="Select type..."
-              createLabel="Create new type"
-            />
-          </div>
            <div className="space-y-2">
             <Label htmlFor="quick-doc-number">Doc Number</Label>
             <Input
@@ -160,7 +134,7 @@ export default function QuickAddToFile() {
               placeholder="e.g., INV-123"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="quick-notes">Description/Notes</Label>
             <Input
               id="quick-notes"
