@@ -78,10 +78,7 @@ export default function FileLog() {
         parentFile.fileNo?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.fileType?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.company?.toLowerCase().includes(lowercasedTerm) ||
-        parentFile.roomNo?.toLowerCase().includes(lowercasedTerm) ||
-        parentFile.rackNo?.toLowerCase().includes(lowercasedTerm) ||
-        parentFile.shelfNo?.toLowerCase().includes(lowercasedTerm) ||
-        parentFile.boxNo?.toLowerCase().includes(lowercasedTerm) ||
+        history.location?.toLowerCase().includes(lowercasedTerm) ||
         history.status?.toLowerCase().includes(lowercasedTerm) ||
         history.updatedBy?.toLowerCase().includes(lowercasedTerm) ||
         history.notes?.toLowerCase().includes(lowercasedTerm)
@@ -99,23 +96,6 @@ export default function FileLog() {
         return 'outline';
       default: return 'default';
     }
-  };
-
-  const parseLocation = (locationString: string) => {
-    const parts = locationString.split(', ');
-    const location: { [key: string]: string } = {};
-    parts.forEach(part => {
-      const [key, value] = part.split(': ');
-      if (key && value) {
-        location[key.toLowerCase()] = value;
-      }
-    });
-    return {
-      room: location.room || 'N/A',
-      rack: location.rack || 'N/A',
-      shelf: location.shelf || 'N/A',
-      box: location.box || 'N/A',
-    };
   };
 
   const getDocInfo = (notes: string) => {
@@ -164,10 +144,7 @@ export default function FileLog() {
                 <TableHead>File Name</TableHead>
                 <TableHead>File Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Rack</TableHead>
-                <TableHead>Shelf</TableHead>
-                <TableHead>Box</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Doc Position</TableHead>
                 <TableHead>Document #</TableHead>
                 <TableHead>Status</TableHead>
@@ -178,17 +155,13 @@ export default function FileLog() {
             </TableHeader>
             <TableBody>
               {filteredHistory.map((item, index) => {
-                const location = parseLocation(item.history.location);
                 const { docPosition, docNumber, remainingNotes } = getDocInfo(item.history.notes);
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
                     <TableCell>{item.parentFile.fileType}</TableCell>
                     <TableCell>{item.parentFile.company}</TableCell>
-                    <TableCell>{location.room}</TableCell>
-                    <TableCell>{location.rack}</TableCell>
-                    <TableCell>{location.shelf}</TableCell>
-                    <TableCell>{location.box}</TableCell>
+                    <TableCell>{item.history.location}</TableCell>
                     <TableCell>{docPosition}</TableCell>
                     <TableCell>{docNumber}</TableCell>
                     <TableCell>
