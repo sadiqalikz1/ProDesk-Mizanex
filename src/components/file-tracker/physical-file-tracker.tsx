@@ -98,7 +98,7 @@ export default function PhysicalFileTracker() {
 
   return (
     <>
-    <div>
+    <div className="w-[90%] mx-auto">
     <Card>
       <CardHeader>
           <div className="flex justify-between items-center">
