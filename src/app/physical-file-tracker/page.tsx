@@ -28,18 +28,20 @@ export default function PhysicalFileTrackerPage() {
                 <CreateFile />
                 <QuickAddToFile />
               </div>
-              <Tabs defaultValue="file-list">
-                <TabsList>
-                  <TabsTrigger value="file-list">File List</TabsTrigger>
-                  <TabsTrigger value="history-log">History Log</TabsTrigger>
-                </TabsList>
-                <TabsContent value="file-list">
-                  <PhysicalFileTracker />
-                </TabsContent>
-                <TabsContent value="history-log">
-                  <FileLog />
-                </TabsContent>
-              </Tabs>
+              <div className="w-11/12 mx-auto">
+                <Tabs defaultValue="file-list">
+                  <TabsList>
+                    <TabsTrigger value="file-list">File List</TabsTrigger>
+                    <TabsTrigger value="history-log">History Log</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="file-list">
+                    <PhysicalFileTracker />
+                  </TabsContent>
+                  <TabsContent value="history-log">
+                    <FileLog />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </div>
           </main>
         </SidebarInset>
