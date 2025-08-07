@@ -98,8 +98,8 @@ export default function QuickAddToFile() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-1 space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div className="md:col-span-2 space-y-2">
             <Label htmlFor="quick-file-select">Find File by Reference #</Label>
             <Combobox
               options={fileOptions}
@@ -108,7 +108,7 @@ export default function QuickAddToFile() {
               placeholder="Select a file..."
             />
           </div>
-          <div className="md:col-span-1 space-y-2">
+          <div className="md:col-span-2 space-y-2">
             <Label htmlFor="quick-notes">Description/Notes</Label>
             <Input
               id="quick-notes"
