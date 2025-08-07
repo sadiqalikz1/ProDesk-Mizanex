@@ -120,7 +120,7 @@ export default function PhysicalFileTracker() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead className="w-[300px]">Location</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Moved</TableHead>

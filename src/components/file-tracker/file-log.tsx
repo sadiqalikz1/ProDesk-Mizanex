@@ -144,7 +144,7 @@ export default function FileLog() {
                 <TableHead>File Name</TableHead>
                 <TableHead>File Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead className="w-[250px]">Location</TableHead>
                 <TableHead>Doc Position</TableHead>
                 <TableHead>Document #</TableHead>
                 <TableHead>Status</TableHead>
