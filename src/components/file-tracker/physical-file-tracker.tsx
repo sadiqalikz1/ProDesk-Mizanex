@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -154,41 +155,35 @@ export default function PhysicalFileTracker() {
                     <TableCell>{lastMoved}</TableCell>
                     <TableCell className="whitespace-normal break-words">{notes}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleUpdate(entry)}
-                          title="Update/Move"
-                        >
-                          <ArrowDownUp className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">More actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">More actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => handleUpdate(entry)}>
+                              <ArrowDownUp className="mr-2 h-4 w-4" />
+                              <span>Update/Move</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleCloseFile(entry)}
-                              disabled={entry.status === 'Closed'}
-                            >
-                              <Archive className="mr-2 h-4 w-4" />
-                              <span>Close File</span>
-                            </DropdownMenuItem>
-                             <DropdownMenuItem disabled>
-                               <History className="mr-2 h-4 w-4" />
-                               <span>View History</span>
-                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                          <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Edit</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleCloseFile(entry)}
+                            disabled={entry.status === 'Closed'}
+                          >
+                            <Archive className="mr-2 h-4 w-4" />
+                            <span>Close File</span>
+                          </DropdownMenuItem>
+                           <DropdownMenuItem disabled>
+                             <History className="mr-2 h-4 w-4" />
+                             <span>View History</span>
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 )
