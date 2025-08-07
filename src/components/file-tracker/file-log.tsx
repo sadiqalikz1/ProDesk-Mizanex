@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Entry, LocationHistory } from './types';
 
 type HistoryEntry = {
-  parentFile: Omit<Entry, 'locationHistory'>;
+  parentFile: Omit<Entry, 'locationHistory' | 'dateCreated'>;
   history: LocationHistory;
 };
 
@@ -42,16 +42,14 @@ export default function FileLog() {
       if (data) {
         Object.keys(data).forEach((key) => {
           const entryData = data[key];
+          // We only need a subset of parent file data for the log
           const parentFile = {
             id: key,
             fileNo: entryData.fileNo,
-            fileType: entryData.fileType,
             company: entryData.company,
-            dateCreated: new Date(entryData.dateCreated),
-            description: entryData.description,
-            owner: entryData.owner,
             roomNo: entryData.roomNo,
             rackNo: entryData.rackNo,
+            shelfNo: entryData.shelfNo,
             boxNo: entryData.boxNo,
             status: entryData.status,
           };
@@ -78,8 +76,10 @@ export default function FileLog() {
       return (
         parentFile.fileNo?.toLowerCase().includes(lowercasedTerm) ||
         parentFile.company?.toLowerCase().includes(lowercasedTerm) ||
-        parentFile.fileType?.toLowerCase().includes(lowercasedTerm) ||
-        history.location?.toLowerCase().includes(lowercasedTerm) ||
+        parentFile.roomNo?.toLowerCase().includes(lowercasedTerm) ||
+        parentFile.rackNo?.toLowerCase().includes(lowercasedTerm) ||
+        parentFile.shelfNo?.toLowerCase().includes(lowercasedTerm) ||
+        parentFile.boxNo?.toLowerCase().includes(lowercasedTerm) ||
         history.status?.toLowerCase().includes(lowercasedTerm) ||
         history.updatedBy?.toLowerCase().includes(lowercasedTerm) ||
         history.notes?.toLowerCase().includes(lowercasedTerm)
@@ -97,6 +97,23 @@ export default function FileLog() {
         return 'outline';
       default: return 'default';
     }
+  };
+
+  const parseLocation = (locationString: string) => {
+    const parts = locationString.split(', ');
+    const location: { [key: string]: string } = {};
+    parts.forEach(part => {
+      const [key, value] = part.split(': ');
+      if (key && value) {
+        location[key.toLowerCase()] = value;
+      }
+    });
+    return {
+      room: location.room || 'N/A',
+      rack: location.rack || 'N/A',
+      shelf: location.shelf || 'N/A',
+      box: location.box || 'N/A',
+    };
   };
 
   return (
@@ -124,7 +141,10 @@ export default function FileLog() {
               <TableRow>
                 <TableHead>File Ref #</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Room</TableHead>
+                <TableHead>Rack</TableHead>
+                <TableHead>Shelf</TableHead>
+                <TableHead>Box</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
                 <TableHead>Date</TableHead>
@@ -132,21 +152,27 @@ export default function FileLog() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredHistory.map((item, index) => (
-                <TableRow key={`${item.parentFile.id}-${index}`}>
-                  <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
-                  <TableCell>{item.parentFile.company}</TableCell>
-                  <TableCell>{item.history.location}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(item.history.status)}>
-                      {item.history.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{item.history.updatedBy}</TableCell>
-                  <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
-                  <TableCell>{item.history.notes}</TableCell>
-                </TableRow>
-              ))}
+              {filteredHistory.map((item, index) => {
+                const location = parseLocation(item.history.location);
+                return (
+                  <TableRow key={`${item.parentFile.id}-${index}`}>
+                    <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
+                    <TableCell>{item.parentFile.company}</TableCell>
+                    <TableCell>{location.room}</TableCell>
+                    <TableCell>{location.rack}</TableCell>
+                    <TableCell>{location.shelf}</TableCell>
+                    <TableCell>{location.box}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(item.history.status)}>
+                        {item.history.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{item.history.updatedBy}</TableCell>
+                    <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
+                    <TableCell>{item.history.notes}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
