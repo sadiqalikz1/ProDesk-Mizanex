@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getDatabase, ref, onValue, update } from 'firebase/database';
+import { getDatabase, ref, onValue, update, get } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -20,13 +20,18 @@ import { Combobox } from '@/components/ui/combobox';
 
 export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [docTypes, setDocTypes] = useState<string[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  const [docType, setDocType] = useState('');
+  const [docNumber, setDocNumber] = useState('');
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     const db = getDatabase(app);
     const entriesRef = ref(db, 'entries');
+    const docTypesRef = ref(db, 'docTypes');
+
     const unsubscribe = onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
       const loadedEntries: Entry[] = data
@@ -38,6 +43,12 @@ export default function QuickAddToFile() {
       setEntries(loadedEntries.filter(e => e.status !== 'Closed'));
     });
 
+    get(docTypesRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        setDocTypes(Object.values(snapshot.val()));
+      }
+    });
+
     return () => unsubscribe();
   }, []);
   
@@ -46,10 +57,10 @@ export default function QuickAddToFile() {
   }
 
   const handleAddToHistory = async () => {
-    if (!selectedFileId || !notes) {
+    if (!selectedFileId) {
       toast({
-        title: 'Missing Fields',
-        description: 'Please select a file and enter notes.',
+        title: 'Missing File',
+        description: 'Please select a file.',
         variant: 'destructive',
       });
       return;
@@ -64,12 +75,27 @@ export default function QuickAddToFile() {
     }
 
     const entryRef = ref(db, `entries/${selectedFileId}`);
+    
+    let constructedNotes = 'Added Doc: ';
+    if (docType) constructedNotes += `${docType} `;
+    if (docNumber) constructedNotes += `#${docNumber} `;
+    if (notes) constructedNotes += `- ${notes}`;
+
+    if (constructedNotes === 'Added Doc: ') {
+      toast({
+        title: 'Missing Information',
+        description: 'Please provide a document type, number, or notes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const newHistoryEntry: LocationHistory = {
       date: new Date().toISOString(),
       location: `Room: ${entry.roomNo}, Rack: ${entry.rackNo}, Box: ${entry.boxNo}`,
       status: entry.status,
       updatedBy: 'System Quick Add',
-      notes,
+      notes: constructedNotes,
     };
 
     const updatedHistory = [...(entry.locationHistory || []), newHistoryEntry];
@@ -81,12 +107,19 @@ export default function QuickAddToFile() {
     });
 
     setSelectedFileId('');
+    setDocType('');
+    setDocNumber('');
     setNotes('');
   };
 
   const fileOptions = entries.map((entry) => ({
     value: entry.id,
     label: `${entry.fileNo} - ${entry.company}`,
+  }));
+  
+  const docTypeOptions = docTypes.map((type) => ({
+    value: type,
+    label: type,
   }));
 
   return (
@@ -98,7 +131,7 @@ export default function QuickAddToFile() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="quick-file-select">Find File by Reference #</Label>
             <Combobox
@@ -108,16 +141,35 @@ export default function QuickAddToFile() {
               placeholder="Select a file..."
             />
           </div>
+          <div className="space-y-2">
+             <Label htmlFor="quick-doc-type">Document Type</Label>
+            <Combobox
+              options={docTypeOptions}
+              value={docType}
+              onChange={setDocType}
+              placeholder="Select type..."
+              createLabel="Create new type"
+            />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="quick-doc-number">Doc Number</Label>
+            <Input
+              id="quick-doc-number"
+              value={docNumber}
+              onChange={(e) => setDocNumber(e.target.value)}
+              placeholder="e.g., INV-123"
+            />
+          </div>
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="quick-notes">Description/Notes</Label>
             <Input
               id="quick-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g., Added Invoice #12345"
+              placeholder="e.g., Paid in full"
             />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-6">
             <Button onClick={handleAddToHistory} className="w-full">
               Add to History
             </Button>
