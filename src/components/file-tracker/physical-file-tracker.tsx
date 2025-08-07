@@ -91,14 +91,12 @@ export default function PhysicalFileTracker() {
     }
   };
   
-  const getLatestHistory = (entry: Entry) => {
-      if (!entry.locationHistory || entry.locationHistory.length === 0) {
-          return { lastMoved: 'N/A' };
-      }
-      const latest = entry.locationHistory[entry.locationHistory.length - 1];
-      return {
-          lastMoved: new Date(latest.date).toLocaleDateString(),
-      }
+  const getLatestMoveDate = (entry: Entry) => {
+    if (!entry.locationHistory || entry.locationHistory.length === 0) {
+        return 'N/A';
+    }
+    const latest = entry.locationHistory[entry.locationHistory.length - 1];
+    return new Date(latest.date).toLocaleDateString();
   }
 
   return (
@@ -131,7 +129,6 @@ export default function PhysicalFileTracker() {
             </TableHeader>
             <TableBody>
               {entries.map((entry) => {
-                const { lastMoved } = getLatestHistory(entry);
                 const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
                 return (
                   <TableRow key={entry.id}>
@@ -145,7 +142,7 @@ export default function PhysicalFileTracker() {
                         {entry.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{lastMoved}</TableCell>
+                    <TableCell>{getLatestMoveDate(entry)}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
