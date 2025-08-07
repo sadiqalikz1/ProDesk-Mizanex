@@ -6,7 +6,6 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import PhysicalFileTracker from '@/components/file-tracker/physical-file-tracker';
 import QuickAddToFile from '@/components/file-tracker/quick-add-to-file';
 
 export default function PhysicalFileTrackerPage() {
@@ -21,7 +20,6 @@ export default function PhysicalFileTrackerPage() {
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
             <div className="space-y-8">
               <QuickAddToFile />
-              <PhysicalFileTracker />
             </div>
           </main>
         </SidebarInset>
