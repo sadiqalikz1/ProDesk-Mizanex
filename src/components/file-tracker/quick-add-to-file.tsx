@@ -18,6 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Entry, LocationHistory } from './types';
 import { Combobox } from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+type DuplicateError = {
+  file: Entry;
+  history: LocationHistory;
+};
 
 export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -26,6 +32,7 @@ export default function QuickAddToFile() {
   const [docNumber, setDocNumber] = useState('');
   const [docPosition, setDocPosition] = useState('');
   const [notes, setNotes] = useState('');
+  const [duplicateError, setDuplicateError] = useState<DuplicateError | null>(null);
   const { toast } = useToast();
   const docNumberInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,7 +86,15 @@ export default function QuickAddToFile() {
 
   const handleFileSelect = (fileId: string) => {
       setSelectedFileId(fileId);
+      setDuplicateError(null);
   }
+
+  const handleDocNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDocNumber(e.target.value);
+    if (duplicateError) {
+      setDuplicateError(null);
+    }
+  };
 
   const handleAddToHistory = async (event?: FormEvent) => {
     if (event) {
@@ -103,19 +118,36 @@ export default function QuickAddToFile() {
     }
 
     if (docNumber) {
-        const history = entry.locationHistory || [];
-        const isDuplicate = history.some(h => 
-            h.notes?.startsWith('Added Doc:') && h.notes.includes(`#${docNumber} `)
-        );
+        const filesWithSameType = entries.filter(e => e.fileType === entry.fileType);
+        let duplicateInfo: DuplicateError | null = null;
 
-        if (isDuplicate) {
-            toast({
-                title: 'Duplicate Document Number',
-                description: `Document number "${docNumber}" already exists in this file's history.`,
-                variant: 'destructive',
-            });
+        for (const file of filesWithSameType) {
+            const duplicateHistoryEntry = (file.locationHistory || []).find(h => 
+                h.notes?.startsWith('Added Doc:') && h.notes.includes(`#${docNumber} `)
+            );
+            if (duplicateHistoryEntry) {
+                duplicateInfo = { file: file, history: duplicateHistoryEntry };
+                break;
+            }
+        }
+
+        if (duplicateInfo) {
+            setDuplicateError(duplicateInfo);
             return;
         }
+    }
+
+    const existingDocInCurrentFile = (entry.locationHistory || []).some(h =>
+        h.notes?.includes(`(Pos: ${docPosition})`)
+    );
+
+    if (docPosition && existingDocInCurrentFile) {
+        toast({
+            title: 'Duplicate Position',
+            description: `Position "${docPosition}" already exists in this file. Please choose a different position.`,
+            variant: 'destructive',
+        });
+        return;
     }
 
     const entryRef = ref(getDatabase(app), `entries/${selectedFileId}`);
@@ -153,10 +185,12 @@ export default function QuickAddToFile() {
     // Keep file selected, but clear other fields
     setDocNumber('');
     setNotes('');
+    setDuplicateError(null);
     
     // Position will be recalculated by useEffect, need to manually trigger update to entries state
     const updatedEntries = entries.map(e => e.id === selectedFileId ? {...e, locationHistory: updatedHistory} : e);
-    setEntries(updatedEntries);
+    setEntries(updatedEntries); // This state update is what triggers the recalculation
+    setSelectedFileId(selectedFileId); // Re-asserting the selected file to trigger useEffect for position
     docNumberInputRef.current?.focus();
   };
 
@@ -164,6 +198,14 @@ export default function QuickAddToFile() {
     value: entry.id,
     label: `${entry.fileNo} - ${entry.company}`,
   }));
+
+  const getDocInfoFromNotes = (notes: string) => {
+    if (!notes) return { pos: 'N/A', remaining: 'N/A' };
+    const posMatch = notes.match(/\(Pos: (\d+)\)/);
+    const pos = posMatch ? posMatch[1] : 'N/A';
+    const remaining = notes.replace(/Added Doc: #\S+ \s?/, '').replace(/\(Pos: \d+\)\s?/, '').replace(/^- /, '').trim();
+    return { pos, remaining: remaining || 'N/A' };
+  }
 
   return (
     <Card>
@@ -219,9 +261,20 @@ export default function QuickAddToFile() {
                 id="quick-doc-number"
                 ref={docNumberInputRef}
                 value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value)}
+                onChange={handleDocNumberChange}
                 placeholder="e.g., INV-123"
+                className={cn(duplicateError && 'border-destructive focus-visible:ring-destructive')}
                 />
+                {duplicateError && (
+                  <div className="text-xs text-destructive p-2 bg-destructive/10 rounded-md space-y-1">
+                      <p className="font-semibold">Doc #{docNumber} already exists in a file of type "{duplicateError.file.fileType}".</p>
+                      <p><span className="font-semibold">File:</span> {duplicateError.file.fileNo} ({duplicateError.file.company})</p>
+                      <p><span className="font-semibold">Location:</span> {duplicateError.history.location}</p>
+                      <p><span className="font-semibold">Position:</span> {getDocInfoFromNotes(duplicateError.history.notes).pos}</p>
+                      <p><span className="font-semibold">Date Added:</span> {new Date(duplicateError.history.date).toLocaleDateString()}</p>
+                      <p><span className="font-semibold">Notes:</span> {getDocInfoFromNotes(duplicateError.history.notes).remaining}</p>
+                  </div>
+                )}
             </div>
             <div className="space-y-2">
                 <Label htmlFor="quick-doc-position">Document Position</Label>
@@ -243,7 +296,7 @@ export default function QuickAddToFile() {
                 />
             </div>
             <div>
-                <Button type="submit" className="w-full" disabled={!selectedFileId}>
+                <Button type="submit" className="w-full" disabled={!selectedFileId || !!duplicateError}>
                     Add to History
                 </Button>
             </div>
