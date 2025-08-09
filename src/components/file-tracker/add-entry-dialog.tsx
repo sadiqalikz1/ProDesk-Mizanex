@@ -290,7 +290,12 @@ export function AddEntryDialog({
         </DialogContent>
       </Dialog>
       <AlertDialog open={confirmation.open} onOpenChange={(open) => !open && setConfirmation({type: null, value: '', open: false})}>
-        <AlertDialogContent>
+        <AlertDialogContent onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCreateConfirmed();
+          }
+        }}>
             <AlertDialogHeader>
                 <AlertDialogTitle>Create new {confirmation.type === 'company' ? 'Company' : 'File Type'}?</AlertDialogTitle>
                 <AlertDialogDescription>
