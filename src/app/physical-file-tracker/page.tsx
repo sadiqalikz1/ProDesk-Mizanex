@@ -12,6 +12,9 @@ import { CreateFile } from '@/components/file-tracker/create-file';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PhysicalFileTracker from '@/components/file-tracker/physical-file-tracker';
 import FileLog from '@/components/file-tracker/file-log';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Eye } from 'lucide-react';
 
 export default function PhysicalFileTrackerPage() {
   return (
@@ -24,6 +27,14 @@ export default function PhysicalFileTrackerPage() {
           <Header />
           <main className="flex-1 p-4 sm:p-6 md:p-8">
             <div className="mx-auto w-11/12 space-y-8">
+              <div className="flex items-center justify-end">
+                <Button asChild>
+                  <Link href="/virtual-file-view">
+                    <Eye className="mr-2 h-4 w-4" />
+                    Virtual View
+                  </Link>
+                </Button>
+              </div>
               <CreateFile />
               <QuickAddToFile />
               <Tabs defaultValue="file-list">
