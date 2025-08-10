@@ -116,6 +116,7 @@ export function AddEntryDialog({
 
   const handleCreateConfirmed = () => {
       if (confirmation.type && confirmation.value) {
+<<<<<<< HEAD
         const setterMap = {
             company: setCompanies,
             fileType: setDocTypes,
@@ -133,6 +134,15 @@ export function AddEntryDialog({
         
         setterMap[confirmation.type](prev => [...prev, confirmation.value]);
         handleChange(fieldMap[confirmation.type], confirmation.value);
+=======
+          if (confirmation.type === 'company') {
+              setCompanies(prev => [...prev, confirmation.value]);
+handleChange('company', confirmation.value);
+          } else {
+              setDocTypes(prev => [...prev, confirmation.value]);
+              handleChange('fileType', confirmation.value);
+          }
+>>>>>>> VIRTUALLOCTION
       }
       setConfirmation({ type: null, value: '', open: false });
   }
@@ -195,6 +205,30 @@ export function AddEntryDialog({
         }
     }
 
+<<<<<<< HEAD
+=======
+    const currentDocTypesSnap = await get(dbDocTypesRef);
+    const currentDocTypes = currentDocTypesSnap.exists() ? Object.values(currentDocTypesSnap.val()) : [];
+    if (!currentDocTypes.some((d:any) => d.toLowerCase() === newEntry.fileType.toLowerCase())) {
+        await push(dbDocTypesRef, newEntry.fileType);
+    }
+
+    // Auto-create shelf if it doesn't exist
+    if (newEntry.roomNo && newEntry.rackNo && newEntry.shelfNo) {
+        const shelfId = `${newEntry.roomNo}-${newEntry.rackNo}-${newEntry.shelfNo}`;
+        const shelfRef = ref(db, `shelves/${shelfId}`);
+        const shelfSnap = await get(shelfRef);
+        if (!shelfSnap.exists()) {
+            await set(shelfRef, {
+                roomNo: newEntry.roomNo,
+                rackNo: newEntry.rackNo,
+                shelfNo: newEntry.shelfNo,
+                capacity: 20 // Default capacity
+            });
+        }
+    }
+    
+>>>>>>> VIRTUALLOCTION
     toast({
       title: 'Entry Saved',
       description: `File ${newEntry.fileNo} has been created.`,

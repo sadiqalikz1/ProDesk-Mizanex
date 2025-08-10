@@ -69,6 +69,7 @@ export default function SettingsPage() {
     
     if (dataToClear === 'file-tracker') {
       try {
+<<<<<<< HEAD
         const pathsToClear = [
           'entries', 'companies', 'docTypes', 'rooms', 
           'racks', 'shelves', 'shelvesMetadata'
@@ -76,6 +77,15 @@ export default function SettingsPage() {
         
         const promises = pathsToClear.map(path => remove(ref(db, path)));
         await Promise.all(promises);
+=======
+        const entriesRef = ref(db, 'entries');
+        const companiesRef = ref(db, 'companies');
+        const docTypesRef = ref(db, 'docTypes');
+        
+        await remove(entriesRef);
+        await remove(companiesRef);
+        await remove(docTypesRef);
+>>>>>>> VIRTUALLOCTION
         
         success = true;
       } catch (error) {

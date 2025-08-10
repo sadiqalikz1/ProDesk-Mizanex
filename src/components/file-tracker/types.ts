@@ -22,3 +22,11 @@ export type Entry = {
   status: string;
   locationHistory: LocationHistory[];
 };
+
+export type Shelf = {
+    id: string;
+    roomNo: string;
+    rackNo: string;
+    shelfNo: string;
+    capacity: number;
+}
