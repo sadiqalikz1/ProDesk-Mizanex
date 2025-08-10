@@ -107,7 +107,7 @@ export function AddEntryDialog({
       if (confirmation.type && confirmation.value) {
           if (confirmation.type === 'company') {
               setCompanies(prev => [...prev, confirmation.value]);
-              handleChange('company', confirmation.value);
+handleChange('company', confirmation.value);
           } else {
               setDocTypes(prev => [...prev, confirmation.value]);
               handleChange('fileType', confirmation.value);
@@ -159,6 +159,21 @@ export function AddEntryDialog({
     const currentDocTypes = currentDocTypesSnap.exists() ? Object.values(currentDocTypesSnap.val()) : [];
     if (!currentDocTypes.some((d:any) => d.toLowerCase() === newEntry.fileType.toLowerCase())) {
         await push(dbDocTypesRef, newEntry.fileType);
+    }
+
+    // Auto-create shelf if it doesn't exist
+    if (newEntry.roomNo && newEntry.rackNo && newEntry.shelfNo) {
+        const shelfId = `${newEntry.roomNo}-${newEntry.rackNo}-${newEntry.shelfNo}`;
+        const shelfRef = ref(db, `shelves/${shelfId}`);
+        const shelfSnap = await get(shelfRef);
+        if (!shelfSnap.exists()) {
+            await set(shelfRef, {
+                roomNo: newEntry.roomNo,
+                rackNo: newEntry.rackNo,
+                shelfNo: newEntry.shelfNo,
+                capacity: 20 // Default capacity
+            });
+        }
     }
     
     toast({
