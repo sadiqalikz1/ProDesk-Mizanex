@@ -60,8 +60,11 @@ export function AddEntryDialog({
   const [newEntry, setNewEntry] = useState<Omit<Entry, 'id'>>(INITIAL_STATE);
   const [companies, setCompanies] = useState<string[]>([]);
   const [docTypes, setDocTypes] = useState<string[]>([]);
+  const [rooms, setRooms] = useState<string[]>([]);
+  const [racks, setRacks] = useState<string[]>([]);
+  const [shelves, setShelves] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState<{
-    type: 'company' | 'fileType' | null;
+    type: 'company' | 'fileType' | 'room' | 'rack' | 'shelf' | null;
     value: string;
     open: boolean;
   }>({ type: null, value: '', open: false });
@@ -70,19 +73,19 @@ export function AddEntryDialog({
   useEffect(() => {
     if (isOpen) {
       const db = getDatabase(app);
-      const companiesRef = ref(db, 'companies');
-      const docTypesRef = ref(db, 'docTypes');
-
-      get(companiesRef).then((snapshot) => {
+      const fetchData = async (path: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+        const snapshot = await get(ref(db, path));
         if (snapshot.exists()) {
-          setCompanies(Object.values(snapshot.val()));
+          const data = snapshot.val();
+          const values = Object.values(data).filter(v => typeof v === 'string') as string[];
+          setter(Array.isArray(data) ? data : values);
         }
-      });
-      get(docTypesRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          setDocTypes(Object.values(snapshot.val()));
-        }
-      });
+      }
+      fetchData('companies', setCompanies);
+      fetchData('docTypes', setDocTypes);
+      fetchData('rooms', setRooms);
+      fetchData('racks', setRacks);
+      fetchData('shelves', setShelves);
     }
   }, [isOpen]);
 
@@ -90,9 +93,17 @@ export function AddEntryDialog({
     setNewEntry((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleConfirmCreate = (type: 'company' | 'fileType', value: string) => {
-    const existing = type === 'company' ? companies : docTypes;
-    if (existing.some(item => item.toLowerCase() === value.toLowerCase())) {
+  const handleConfirmCreate = (type: 'company' | 'fileType' | 'room' | 'rack' | 'shelf', value: string) => {
+    const existingMap = {
+        company: companies,
+        fileType: docTypes,
+        room: rooms,
+        rack: racks,
+        shelf: shelves,
+    };
+    const existing = existingMap[type];
+
+    if (existing.some(item => typeof item === 'string' && item.toLowerCase() === value.toLowerCase())) {
         toast({
             title: 'Duplicate Entry',
             description: `"${value}" already exists.`,
@@ -105,13 +116,23 @@ export function AddEntryDialog({
 
   const handleCreateConfirmed = () => {
       if (confirmation.type && confirmation.value) {
-          if (confirmation.type === 'company') {
-              setCompanies(prev => [...prev, confirmation.value]);
-              handleChange('company', confirmation.value);
-          } else {
-              setDocTypes(prev => [...prev, confirmation.value]);
-              handleChange('fileType', confirmation.value);
-          }
+        const setterMap = {
+            company: setCompanies,
+            fileType: setDocTypes,
+            room: setRooms,
+            rack: setRacks,
+            shelf: setShelves
+        };
+        const fieldMap = {
+            company: 'company',
+            fileType: 'fileType',
+            room: 'roomNo',
+            rack: 'rackNo',
+            shelf: 'shelfNo'
+        } as const;
+        
+        setterMap[confirmation.type](prev => [...prev, confirmation.value]);
+        handleChange(fieldMap[confirmation.type], confirmation.value);
       }
       setConfirmation({ type: null, value: '', open: false });
   }
@@ -146,21 +167,34 @@ export function AddEntryDialog({
 
     await set(newEntryRef, entryToSave);
 
-    // Add company and docType if new
-    const dbCompaniesRef = ref(db, 'companies');
-    const dbDocTypesRef = ref(db, 'docTypes');
-    const currentCompaniesSnap = await get(dbCompaniesRef);
-    const currentCompanies = currentCompaniesSnap.exists() ? Object.values(currentCompaniesSnap.val()) : [];
-    if (!currentCompanies.some((c:any) => c.toLowerCase() === newEntry.company.toLowerCase())) {
-        await push(dbCompaniesRef, newEntry.company);
+    const updateUniqueList = async (listRefPath: string, currentList: string[], newValue: string) => {
+        if (newValue && !currentList.some((item: any) => item.toLowerCase() === newValue.toLowerCase())) {
+            await push(ref(db, listRefPath), newValue);
+        }
+    };
+    
+    await updateUniqueList('companies', companies, newEntry.company);
+    await updateUniqueList('docTypes', docTypes, newEntry.fileType);
+    await updateUniqueList('rooms', rooms, newEntry.roomNo);
+    await updateUniqueList('racks', racks, newEntry.rackNo);
+    await updateUniqueList('shelves', shelves, newEntry.shelfNo);
+    
+    // Auto-create shelf if it's new
+    if (newEntry.roomNo && newEntry.rackNo && newEntry.shelfNo) {
+        const shelfId = `${newEntry.roomNo}-${newEntry.rackNo}-${newEntry.shelfNo}`;
+        const shelfRef = ref(db, `shelvesMetadata/${shelfId}`);
+        const shelfSnap = await get(shelfRef);
+        if (!shelfSnap.exists()) {
+            await set(shelfRef, {
+                id: shelfId,
+                roomNo: newEntry.roomNo,
+                rackNo: newEntry.rackNo,
+                shelfNo: newEntry.shelfNo,
+                capacity: 20, // Default capacity
+            });
+        }
     }
 
-    const currentDocTypesSnap = await get(dbDocTypesRef);
-    const currentDocTypes = currentDocTypesSnap.exists() ? Object.values(currentDocTypesSnap.val()) : [];
-    if (!currentDocTypes.some((d:any) => d.toLowerCase() === newEntry.fileType.toLowerCase())) {
-        await push(dbDocTypesRef, newEntry.fileType);
-    }
-    
     toast({
       title: 'Entry Saved',
       description: `File ${newEntry.fileNo} has been created.`,
@@ -233,26 +267,35 @@ export function AddEntryDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="roomNo">Room Number</Label>
-              <Input
-                id="roomNo"
+              <Combobox
+                options={rooms.map((r) => ({ value: r, label: r }))}
                 value={newEntry.roomNo}
-                onChange={(e) => handleChange('roomNo', e.target.value)}
+                onChange={(value) => handleChange('roomNo', value)}
+                placeholder="Select or create room..."
+                createLabel="Create new room"
+                onConfirmCreate={(value) => handleConfirmCreate('room', value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="rackNo">Rack Number</Label>
-              <Input
-                id="rackNo"
+              <Combobox
+                options={racks.map((r) => ({ value: r, label: r }))}
                 value={newEntry.rackNo}
-                onChange={(e) => handleChange('rackNo', e.target.value)}
+                onChange={(value) => handleChange('rackNo', value)}
+                placeholder="Select or create rack..."
+                createLabel="Create new rack"
+                onConfirmCreate={(value) => handleConfirmCreate('rack', value)}
               />
             </div>
              <div className="space-y-2">
               <Label htmlFor="shelfNo">Shelf Number</Label>
-              <Input
-                id="shelfNo"
+              <Combobox
+                options={shelves.map((s) => ({ value: s, label: s }))}
                 value={newEntry.shelfNo}
-                onChange={(e) => handleChange('shelfNo', e.target.value)}
+                onChange={(value) => handleChange('shelfNo', value)}
+                placeholder="Select or create shelf..."
+                createLabel="Create new shelf"
+                onConfirmCreate={(value) => handleConfirmCreate('shelf', value)}
               />
             </div>
             <div className="space-y-2">
@@ -297,7 +340,7 @@ export function AddEntryDialog({
           }
         }}>
             <AlertDialogHeader>
-                <AlertDialogTitle>Create new {confirmation.type === 'company' ? 'Company' : 'File Type'}?</AlertDialogTitle>
+                <AlertDialogTitle>Create new {confirmation.type?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}?</AlertDialogTitle>
                 <AlertDialogDescription>
                     Are you sure you want to create a new entry for "{confirmation.value}"?
                 </AlertDialogDescription>

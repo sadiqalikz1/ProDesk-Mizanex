@@ -41,7 +41,11 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("")
 
   const handleSelect = (currentValue: string) => {
-    const option = options.find(o => o.value.toLowerCase() === currentValue.toLowerCase());
+    const option = options.find(
+      (o) =>
+        typeof o.value === 'string' &&
+        o.value.toLowerCase() === currentValue.toLowerCase()
+    );
     if (option) {
       onChange(option.value)
     } else if (onConfirmCreate) {
@@ -53,14 +57,15 @@ export function Combobox({
   }
 
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
+    typeof option.label === 'string' && option.label.toLowerCase().includes(inputValue.toLowerCase())
   )
 
   const showCreateOption =
     createLabel &&
     inputValue &&
     !options.some(
-      (option) => option.label.toLowerCase() === inputValue.toLowerCase()
+      (option) =>
+        typeof option.label === 'string' && option.label.toLowerCase() === inputValue.toLowerCase()
     )
 
   return (
