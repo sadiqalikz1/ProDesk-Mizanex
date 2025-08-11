@@ -30,3 +30,10 @@ export type Shelf = {
     shelfNo: string;
     capacity: number;
 }
+
+export type Rack = {
+  id: string;
+  roomNo: string;
+  rackNo: string;
+  shelves: Shelf[];
+};

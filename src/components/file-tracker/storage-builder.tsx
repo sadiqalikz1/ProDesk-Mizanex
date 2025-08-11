@@ -15,10 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Library, Building } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Shelf } from './types';
 
-type Rack = {
+type NewRack = {
   id: string;
   name: string;
   rows: number;
@@ -26,14 +24,14 @@ type Rack = {
   shelfCapacity: number;
 };
 
-type Room = {
+type NewRoom = {
   id: string;
   name: string;
-  racks: Rack[];
+  racks: NewRack[];
 };
 
 export default function StorageBuilder() {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<NewRoom[]>([]);
   const { toast } = useToast();
 
   const handleAddRoom = () => {
@@ -79,7 +77,7 @@ export default function StorageBuilder() {
     );
   };
 
-  const handleRackChange = (roomId: string, rackId: string, field: keyof Omit<Rack, 'id'>, value: string | number) => {
+  const handleRackChange = (roomId: string, rackId: string, field: keyof Omit<NewRack, 'id'>, value: string | number) => {
       setRooms(
         rooms.map(room => room.id === roomId ? {
             ...room,
@@ -141,7 +139,6 @@ export default function StorageBuilder() {
     
     try {
         const shelvesMetaRef = ref(db, 'shelvesMetadata');
-        // Fetch existing data to merge, not overwrite
         const snapshot = await get(shelvesMetaRef);
         const existingData = snapshot.val() || {};
         const combinedData = {...existingData, ...newShelvesData };
@@ -156,7 +153,7 @@ export default function StorageBuilder() {
 
   };
 
-  const renderShelfPreview = (rack: Rack) => {
+  const renderShelfPreview = (rack: NewRack) => {
     const { rows, cols } = rack;
     if(isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) return <p className='text-destructive text-sm'>Rows and columns must be positive numbers.</p>;
     
@@ -184,7 +181,7 @@ export default function StorageBuilder() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Storage Layout Builder</CardTitle>
+        <CardTitle>Create New Storage Layout</CardTitle>
         <CardDescription>
           Define your physical storage layout. Add rooms, then add racks to each room with a defined shelf structure. Your saved layouts will be combined with any existing ones.
         </CardDescription>

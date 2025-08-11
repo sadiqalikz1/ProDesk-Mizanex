@@ -10,6 +10,8 @@ import StorageBuilder from '@/components/file-tracker/storage-builder';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import ExistingStorageLayout from '@/components/file-tracker/existing-storage-layout';
+import { Separator } from '@/components/ui/separator';
 
 export default function StorageManagementPage() {
   return (
@@ -32,6 +34,8 @@ export default function StorageManagementPage() {
                 </Button>
               </div>
               <StorageBuilder />
+              <Separator />
+              <ExistingStorageLayout />
             </div>
           </main>
         </SidebarInset>
