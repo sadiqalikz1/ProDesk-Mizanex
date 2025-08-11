@@ -70,17 +70,11 @@ export default function SettingsPage() {
     
     if (dataToClear === 'file-tracker') {
       try {
-        const entriesRef = ref(db, 'entries');
-        const companiesRef = ref(db, 'companies');
-        const docTypesRef = ref(db, 'docTypes');
-        const shelvesMetaRef = ref(db, 'shelvesMetadata');
-        const racksMetaRef = ref(db, 'racksMetadata');
-        
-        await remove(entriesRef);
-        await remove(companiesRef);
-        await remove(docTypesRef);
-        await remove(shelvesMetaRef);
-        await remove(racksMetaRef);
+        await remove(ref(db, 'entries'));
+        await remove(ref(db, 'companies'));
+        await remove(ref(db, 'docTypes'));
+        await remove(ref(db, 'shelvesMetadata'));
+        await remove(ref(db, 'racksMetadata'));
         
         success = true;
       } catch (error) {
@@ -182,7 +176,7 @@ export default function SettingsPage() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action is irreversible and will permanently delete all{' '}
-                  <span className='font-bold'>{dataToClear.replace('-', ' ')} data</span>.
+                  <span className='font-bold'>{dataToClear.replace('-', ' ')} data</span> from the database. This includes all files, history, and storage layout configurations.
                   Please confirm you want to proceed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
