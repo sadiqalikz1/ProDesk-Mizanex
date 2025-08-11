@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -72,10 +73,14 @@ export default function SettingsPage() {
         const entriesRef = ref(db, 'entries');
         const companiesRef = ref(db, 'companies');
         const docTypesRef = ref(db, 'docTypes');
+        const shelvesMetaRef = ref(db, 'shelvesMetadata');
+        const racksMetaRef = ref(db, 'racksMetadata');
         
         await remove(entriesRef);
         await remove(companiesRef);
         await remove(docTypesRef);
+        await remove(shelvesMetaRef);
+        await remove(racksMetaRef);
         
         success = true;
       } catch (error) {
@@ -176,7 +181,7 @@ export default function SettingsPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action is irreversible and will permanently delete all {' '}
+                  This action is irreversible and will permanently delete all{' '}
                   <span className='font-bold'>{dataToClear.replace('-', ' ')} data</span>.
                   Please confirm you want to proceed.
                 </AlertDialogDescription>
