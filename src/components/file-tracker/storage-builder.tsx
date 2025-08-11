@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,19 +90,14 @@ export default function StorageBuilder() {
 
   const handleSaveLayout = async () => {
     const db = getDatabase(app);
-    const shelvesMetaRef = ref(db, 'shelvesMetadata');
     const racksMetaRef = ref(db, 'racksMetadata');
     
-    const [shelvesSnapshot, racksSnapshot] = await Promise.all([
-        get(shelvesMetaRef),
-        get(racksMetaRef)
-    ]);
-    const existingShelves: {[key: string]: Shelf} = shelvesSnapshot.val() || {};
+    const racksSnapshot = await get(racksMetaRef);
     const existingRacks: {[key: string]: any} = racksSnapshot.val() || {};
 
     const existingRooms = new Set(Object.values(existingRacks).map(r => r.roomNo));
     const existingRacksByRoom: {[room: string]: Set<string>} = {};
-    Object.values(existingRacks).forEach(r => {
+    Object.values(existingRacks).forEach((r: any) => {
         if (!existingRacksByRoom[r.roomNo]) {
             existingRacksByRoom[r.roomNo] = new Set();
         }
@@ -178,6 +174,7 @@ export default function StorageBuilder() {
             
             for(let i = 1; i <= totalShelves; i++) {
                 const shelfId = `${rackId}-${i}`;
+                if (!newShelvesData[shelfId]) newShelvesData[shelfId] = {};
                 newShelvesData[shelfId] = {
                     id: shelfId,
                     roomNo: roomName,
@@ -194,8 +191,8 @@ export default function StorageBuilder() {
     if (error) return;
     
     try {
-        await update(racksMetaRef, newRacksData);
-        await update(shelvesMetaRef, newShelvesData);
+        await update(ref(db, 'racksMetadata'), newRacksData);
+        await update(ref(db, 'shelvesMetadata'), newShelvesData);
 
         toast({ title: 'Layout Saved', description: 'Your storage layout has been successfully saved.' });
         setRooms([]);
@@ -210,23 +207,18 @@ export default function StorageBuilder() {
     const { rows, cols } = rack;
     if(isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) return <p className='text-destructive text-sm'>Rows and columns must be positive numbers.</p>;
     
-    let shelfCounter = 0;
+    const totalShelves = rows * cols;
+
     return (
-        <div className="border-2 border-muted-foreground p-2 bg-muted/20 rounded-lg">
-            <div className="flex flex-col gap-2">
-                {Array.from({length: rows}).map((_, rowIndex) => (
-                    <div key={rowIndex} className="flex gap-2">
-                         {Array.from({length: cols}).map((_, colIndex) => {
-                            shelfCounter++;
-                            return (
-                                <div key={colIndex} className="flex-1 flex items-center justify-center p-2 h-16 bg-muted/40 border-y-4 border-muted-foreground rounded-md text-center text-xs">
-                                   Shelf {shelfCounter}
-                                </div>
-                            )
-                         })}
-                    </div>
-                ))}
-            </div>
+        <div 
+          className="border-2 border-muted-foreground p-2 bg-muted/20 rounded-lg grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
+            {Array.from({length: totalShelves}).map((_, i) => (
+                <div key={i} className="flex-1 flex items-center justify-center p-2 h-16 bg-muted/40 border-y-4 border-muted-foreground rounded-md text-center text-xs">
+                    Shelf {i + 1}
+                </div>
+            ))}
         </div>
     )
   }
@@ -243,9 +235,6 @@ export default function StorageBuilder() {
         <div className="flex justify-between items-center border-t pt-6">
             <Button onClick={handleAddRoom}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Room
-            </Button>
-            <Button onClick={handleSaveLayout} disabled={rooms.length === 0}>
-                Save Current Layout Additions
             </Button>
         </div>
 
@@ -330,6 +319,11 @@ export default function StorageBuilder() {
             ))}
         </div>
       </CardContent>
+      <CardFooter className="flex justify-end">
+        <Button onClick={handleSaveLayout} disabled={rooms.length === 0}>
+            Save Current Layout Additions
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
