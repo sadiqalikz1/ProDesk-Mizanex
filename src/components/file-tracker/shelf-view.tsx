@@ -144,7 +144,7 @@ export default function ShelfView() {
                               <Settings className='h-4 w-4' />
                             </Button>
                           </div>
-                          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+                          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                               {Array.from({ length: shelf.capacity || 20 }, (_, i) => {
                                   const position = i + 1;
                                   const file = files.find(f => f.boxNo && parseInt(f.boxNo, 10) === position);
