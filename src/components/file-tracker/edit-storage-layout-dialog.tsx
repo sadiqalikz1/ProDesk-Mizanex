@@ -192,23 +192,18 @@ export function EditStorageLayoutDialog({
   const renderShelfPreview = () => {
     if(isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) return <p className='text-destructive text-sm'>Rows and columns must be positive numbers.</p>;
     
-    let shelfCounter = 0;
+    const totalShelves = rows * cols;
+
     return (
-        <div className="border-2 border-muted-foreground p-2 bg-muted/20 rounded-lg">
-            <div className="flex flex-col gap-2">
-                {Array.from({length: rows}).map((_, rowIndex) => (
-                    <div key={rowIndex} className="flex gap-2">
-                         {Array.from({length: cols}).map((_, colIndex) => {
-                            shelfCounter++;
-                            return (
-                                <div key={colIndex} className="flex-1 flex items-center justify-center p-2 h-16 bg-muted/40 border-y-4 border-muted-foreground rounded-md text-center text-xs">
-                                   Shelf {shelfCounter}
-                                </div>
-                            )
-                         })}
-                    </div>
-                ))}
-            </div>
+        <div 
+          className="border-2 border-muted-foreground p-2 bg-muted/20 rounded-lg grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
+            {Array.from({length: totalShelves}).map((_, i) => (
+                <div key={i} className="flex-1 flex items-center justify-center p-2 h-16 bg-muted/40 border-y-4 border-muted-foreground rounded-md text-center text-xs">
+                    Shelf {i + 1}
+                </div>
+            ))}
         </div>
     )
   }
