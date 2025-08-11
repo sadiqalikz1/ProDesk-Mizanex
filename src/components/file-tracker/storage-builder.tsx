@@ -20,7 +20,8 @@ import { cn } from '@/lib/utils';
 type Rack = {
   id: string;
   name: string;
-  layout: string; // e.g., "5x2"
+  rows: number;
+  cols: number;
   shelfCapacity: number;
 };
 
@@ -59,7 +60,7 @@ export default function StorageBuilder() {
               ...room,
               racks: [
                 ...room.racks,
-                { id: `rack-${Date.now()}`, name: '', layout: '5x2', shelfCapacity: 10 },
+                { id: `rack-${Date.now()}`, name: '', rows: 5, cols: 2, shelfCapacity: 10 },
               ],
             }
           : room
@@ -77,7 +78,7 @@ export default function StorageBuilder() {
     );
   };
 
-  const handleRackChange = (roomId: string, rackId: string, field: keyof Rack, value: string | number) => {
+  const handleRackChange = (roomId: string, rackId: string, field: keyof Omit<Rack, 'id'>, value: string | number) => {
       setRooms(
         rooms.map(room => room.id === roomId ? {
             ...room,
@@ -91,9 +92,19 @@ export default function StorageBuilder() {
     let allShelvesData: { [key: string]: any } = {};
     let error = false;
 
+    if (rooms.length === 0) {
+      toast({ title: 'Layout is empty', description: 'Please add at least one room to save.', variant: 'destructive'});
+      return;
+    }
+
     rooms.forEach(room => {
         if (!room.name.trim()) {
             toast({ title: 'Validation Error', description: `A room name is missing.`, variant: 'destructive'});
+            error = true;
+            return;
+        }
+        if (room.racks.length === 0) {
+            toast({ title: 'Validation Error', description: `Room "${room.name}" has no racks.`, variant: 'destructive'});
             error = true;
             return;
         }
@@ -104,16 +115,13 @@ export default function StorageBuilder() {
                 return;
             }
 
-            const layoutParts = rack.layout.toLowerCase().split('x');
-            if (layoutParts.length !== 2 || isNaN(parseInt(layoutParts[0])) || isNaN(parseInt(layoutParts[1]))) {
-                toast({ title: 'Invalid Layout', description: `Layout for rack "${rack.name}" must be in format "rowsxcols" (e.g., 5x2).`, variant: 'destructive'});
+            if (isNaN(rack.rows) || isNaN(rack.cols) || rack.rows <= 0 || rack.cols <= 0) {
+                toast({ title: 'Invalid Layout', description: `Layout for rack "${rack.name}" must have positive numbers for rows and columns.`, variant: 'destructive'});
                 error = true;
                 return;
             }
             
-            const rows = parseInt(layoutParts[0]);
-            const cols = parseInt(layoutParts[1]);
-            const totalShelves = rows * cols;
+            const totalShelves = rack.rows * rack.cols;
             
             for(let i = 1; i <= totalShelves; i++) {
                 const shelfId = `${room.name}-${rack.name}-${i}`.replace(/\s+/g, '-');
@@ -143,11 +151,7 @@ export default function StorageBuilder() {
   };
 
   const renderShelfPreview = (rack: Rack) => {
-    const layoutParts = rack.layout.toLowerCase().split('x');
-    if (layoutParts.length !== 2) return <p className='text-destructive text-sm'>Invalid layout format.</p>;
-    const rows = parseInt(layoutParts[0]);
-    const cols = parseInt(layoutParts[1]);
-
+    const { rows, cols } = rack;
     if(isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) return <p className='text-destructive text-sm'>Rows and columns must be positive numbers.</p>;
     
     let shelfCounter = 0;
@@ -214,13 +218,25 @@ export default function StorageBuilder() {
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-3 gap-4 mb-4">
                                      <div className="space-y-2">
-                                        <Label>Shelf Arrangement (Rows x Columns)</Label>
+                                        <Label>Number of Rows</Label>
                                         <Input
-                                            placeholder="e.g., 5x2"
-                                            value={rack.layout}
-                                            onChange={(e) => handleRackChange(room.id, rack.id, 'layout', e.target.value)}
+                                            type="number"
+                                            placeholder="e.g., 5"
+                                            value={rack.rows}
+                                            onChange={(e) => handleRackChange(room.id, rack.id, 'rows', parseInt(e.target.value, 10) || 0)}
+                                            min="1"
+                                        />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label>Number of Columns</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="e.g., 2"
+                                            value={rack.cols}
+                                            onChange={(e) => handleRackChange(room.id, rack.id, 'cols', parseInt(e.target.value, 10) || 0)}
+                                            min="1"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -230,6 +246,7 @@ export default function StorageBuilder() {
                                             placeholder="e.g., 10"
                                             value={rack.shelfCapacity}
                                             onChange={(e) => handleRackChange(room.id, rack.id, 'shelfCapacity', parseInt(e.target.value, 10) || 0)}
+                                            min="1"
                                         />
                                     </div>
                                 </div>
