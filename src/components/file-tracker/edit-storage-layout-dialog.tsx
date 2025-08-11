@@ -29,30 +29,35 @@ export function EditStorageLayoutDialog({
   setIsOpen: (isOpen: boolean) => void;
   rack: Rack;
 }) {
-  const [editedRack, setEditedRack] = useState({ ...rack });
-  const [rows, setRows] = useState(0);
-  const [cols, setCols] = useState(0);
-  const [capacity, setCapacity] = useState(0);
+  const [rackName, setRackName] = useState(rack.rackNo);
+  const [rows, setRows] = useState(rack.rows);
+  const [cols, setCols] = useState(rack.cols);
+  const [capacity, setCapacity] = useState(rack.capacity);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (rack && rack.shelves.length > 0) {
-      setEditedRack({ ...rack });
-      // Infer rows and cols from shelf numbers, assuming they are numeric and sequential
-      const shelfNumbers = rack.shelves.map(s => parseInt(s.shelfNo, 10)).filter(n => !isNaN(n));
-      const maxShelf = Math.max(...shelfNumbers);
-      // This is a guess, we cannot know the original rows/cols. User must re-enter.
-      setRows(maxShelf); 
-      setCols(1);
-      setCapacity(rack.shelves[0].capacity);
+    if (rack && isOpen) {
+      setRackName(rack.rackNo);
+      setRows(rack.rows);
+      setCols(rack.cols);
+      setCapacity(rack.capacity);
     }
   }, [rack, isOpen]);
 
   const handleSave = async () => {
-    if (!editedRack.rackNo.trim()) {
-        toast({ title: 'Validation Error', description: `Rack name cannot be empty.`, variant: 'destructive'});
-        return;
+    const db = getDatabase(app);
+
+    if (rackName.trim() !== rack.rackNo) {
+        const racksRef = ref(db, 'racksMetadata');
+        const snapshot = await get(racksRef);
+        const allRacks = snapshot.val() || {};
+        const rackExists = Object.values(allRacks).some((r: any) => r.roomNo === rack.roomNo && r.rackNo === rackName.trim());
+        if (rackExists) {
+            toast({ title: 'Validation Error', description: `Rack name "${rackName}" already exists in this room.`, variant: 'destructive'});
+            return;
+        }
     }
+
     if (isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) {
         toast({ title: 'Invalid Layout', description: `Layout must have positive numbers for rows and columns.`, variant: 'destructive'});
         return;
@@ -61,33 +66,83 @@ export function EditStorageLayoutDialog({
         toast({ title: 'Invalid Capacity', description: `Capacity must be a positive number.`, variant: 'destructive'});
         return;
     }
+    
+    // Check if there are files in shelves that will be deleted
+    const oldTotalShelves = rack.rows * rack.cols;
+    const newTotalShelves = rows * cols;
+    if (newTotalShelves < oldTotalShelves) {
+        const entriesRef = ref(db, 'entries');
+        const entriesSnap = await get(entriesRef);
+        const allEntries = entriesSnap.val() || {};
+        const filesInDeletedShelves = Object.values(allEntries).filter((entry: any) =>
+            entry.roomNo === rack.roomNo &&
+            entry.rackNo === rack.rackNo &&
+            parseInt(entry.shelfNo) > newTotalShelves
+        );
+        if (filesInDeletedShelves.length > 0) {
+            toast({
+                title: 'Cannot Update Rack',
+                description: `There are ${filesInDeletedShelves.length} file(s) in shelves that would be deleted. Please move them before reducing the number of shelves.`,
+                variant: 'destructive',
+                duration: 9000,
+            });
+            return;
+        }
+    }
 
-    const db = getDatabase(app);
-    const shelvesMetaRef = ref(db, 'shelvesMetadata');
-    const snapshot = await get(shelvesMetaRef);
-    const allShelves = snapshot.val() || {};
-    let updatedShelves = { ...allShelves };
+    // Delete old rack and its shelves
+    const rackRef = ref(db, `racksMetadata/${rack.id}`);
+    await remove(rackRef);
+    for (const shelf of rack.shelves) {
+        const shelfRef = ref(db, `shelvesMetadata/${shelf.id}`);
+        await remove(shelfRef);
+    }
 
-    // Remove old shelves for this rack
-    rack.shelves.forEach(shelf => {
-      delete updatedShelves[shelf.id];
-    });
-
-    // Add new/updated shelves
+    // Create new rack and shelves
+    const newRackId = `${rack.roomNo}-${rackName.trim()}`.replace(/\s+/g, '-');
+    const newRackRef = ref(db, `racksMetadata/${newRackId}`);
+    const newRackData = {
+        id: newRackId,
+        roomNo: rack.roomNo,
+        rackNo: rackName.trim(),
+        rows: Number(rows),
+        cols: Number(cols),
+        capacity: Number(capacity)
+    };
+    await set(newRackRef, newRackData);
+    
+    const newShelvesData: {[key:string]: any} = {};
     const totalShelves = rows * cols;
-    for(let i = 1; i <= totalShelves; i++) {
-        const shelfId = `${editedRack.roomNo}-${editedRack.rackNo}-${i}`.replace(/\s+/g, '-');
-        updatedShelves[shelfId] = {
+    for (let i = 1; i <= totalShelves; i++) {
+        const shelfId = `${newRackId}-${i}`;
+        newShelvesData[shelfId] = {
             id: shelfId,
-            roomNo: editedRack.roomNo,
-            rackNo: editedRack.rackNo,
+            roomNo: rack.roomNo,
+            rackNo: rackName.trim(),
             shelfNo: String(i),
             capacity: Number(capacity)
         };
     }
+    const shelvesMetaRef = ref(db, 'shelvesMetadata');
+    await update(shelvesMetaRef, newShelvesData);
     
-    await set(shelvesMetaRef, updatedShelves);
-    
+    // Potentially update entries if rack name changed
+    if (rack.rackNo !== rackName.trim()) {
+        const entriesRef = ref(db, 'entries');
+        const entriesSnap = await get(entriesRef);
+        const allEntries = entriesSnap.val() || {};
+        const updates: {[key: string]: any} = {};
+        Object.keys(allEntries).forEach(key => {
+            const entry = allEntries[key];
+            if (entry.roomNo === rack.roomNo && entry.rackNo === rack.rackNo) {
+                updates[`/entries/${key}/rackNo`] = rackName.trim();
+            }
+        });
+        if (Object.keys(updates).length > 0) {
+            await update(ref(db), updates);
+        }
+    }
+
     toast({
       title: 'Rack Updated',
       description: `Rack ${rack.rackNo} has been successfully updated.`,
@@ -97,17 +152,35 @@ export function EditStorageLayoutDialog({
 
   const handleDeleteRack = async () => {
     const db = getDatabase(app);
-    const shelvesMetaRef = ref(db, 'shelvesMetadata');
-    const snapshot = await get(shelvesMetaRef);
-    const allShelves = snapshot.val() || {};
-    let updatedShelves = { ...allShelves };
     
-    // Remove all shelves associated with this rack
-    rack.shelves.forEach(shelf => {
-        delete updatedShelves[shelf.id];
-    });
+    // Check if there are files in this rack
+    const entriesRef = ref(db, 'entries');
+    const entriesSnap = await get(entriesRef);
+    const allEntries = entriesSnap.val() || {};
+    const filesInRack = Object.values(allEntries).some((entry: any) =>
+        entry.roomNo === rack.roomNo && entry.rackNo === rack.rackNo
+    );
+
+    if (filesInRack) {
+        toast({
+            title: 'Cannot Delete Rack',
+            description: 'This rack contains files. Please move all files from this rack before deleting it.',
+            variant: 'destructive',
+            duration: 9000,
+        });
+        return;
+    }
     
-    await set(shelvesMetaRef, updatedShelves);
+    // Delete rack metadata
+    const rackRef = ref(db, `racksMetadata/${rack.id}`);
+    await remove(rackRef);
+    
+    // Delete associated shelves
+    for (const shelf of rack.shelves) {
+        const shelfRef = ref(db, `shelvesMetadata/${shelf.id}`);
+        await remove(shelfRef);
+    }
+    
     toast({
         title: 'Rack Deleted',
         description: `Successfully deleted rack "${rack.rackNo}" and all its shelves.`,
@@ -146,7 +219,7 @@ export function EditStorageLayoutDialog({
         <DialogHeader>
           <DialogTitle>Edit Rack: {rack.rackNo}</DialogTitle>
           <DialogDescription>
-            Update the layout for this rack. Note: Changing the name or layout will regenerate all shelves, potentially orphaning files if shelf numbers change.
+            Update the layout for this rack. Note: Changing the layout will regenerate all shelves. Files on deleted shelves will need to be reassigned.
           </DialogDescription>
         </DialogHeader>
         <div className="p-4 border rounded-md">
@@ -155,8 +228,8 @@ export function EditStorageLayoutDialog({
                     <Library className="h-5 w-5 text-primary" />
                     <Input
                         placeholder="Enter Rack Name (e.g., Left Wall)"
-                        value={editedRack.rackNo}
-                        onChange={(e) => setEditedRack({...editedRack, rackNo: e.target.value})}
+                        value={rackName}
+                        onChange={(e) => setRackName(e.target.value)}
                     />
                 </div>
             </div>

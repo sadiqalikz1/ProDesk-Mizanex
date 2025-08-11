@@ -35,5 +35,8 @@ export type Rack = {
   id: string;
   roomNo: string;
   rackNo: string;
+  rows: number;
+  cols: number;
+  capacity: number;
   shelves: Shelf[];
 };

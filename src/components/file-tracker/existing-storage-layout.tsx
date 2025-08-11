@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
@@ -27,42 +27,46 @@ export default function ExistingStorageLayout() {
 
   useEffect(() => {
     const db = getDatabase(app);
+    const racksRef = ref(db, 'racksMetadata');
     const shelvesRef = ref(db, 'shelvesMetadata');
 
-    const unsubscribe = onValue(shelvesRef, (snapshot) => {
-      const shelves: Shelf[] = [];
-      snapshot.forEach((childSnapshot) => {
-        shelves.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+    const unsubscribeRacks = onValue(racksRef, (racksSnapshot) => {
+      const racks: Rack[] = [];
+      racksSnapshot.forEach((childSnapshot) => {
+        racks.push({ shelves: [], ...childSnapshot.val() });
       });
 
-      const organizedData: OrganizedData = {};
-      shelves.forEach((shelf) => {
-        const { roomNo, rackNo } = shelf;
-        if (!roomNo || !rackNo) return;
+      const unsubscribeShelves = onValue(shelvesRef, (shelvesSnapshot) => {
+          const shelves: Shelf[] = [];
+          shelvesSnapshot.forEach((childSnapshot) => {
+              shelves.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+          });
 
-        if (!organizedData[roomNo]) organizedData[roomNo] = [];
-        
-        let rack = organizedData[roomNo].find(r => r.rackNo === rackNo);
-        if (!rack) {
-            rack = { id: `${roomNo}-${rackNo}`, roomNo, rackNo, shelves: [] };
-            organizedData[roomNo].push(rack);
-        }
-        rack.shelves.push(shelf);
+          const organizedData: OrganizedData = {};
+
+          racks.forEach(rack => {
+              rack.shelves = shelves.filter(s => s.roomNo === rack.roomNo && s.rackNo === rack.rackNo);
+              if (!organizedData[rack.roomNo]) {
+                  organizedData[rack.roomNo] = [];
+              }
+              organizedData[rack.roomNo].push(rack);
+          });
+
+
+          // Sort rooms, and racks within rooms
+          const sortedRooms = Object.keys(organizedData).sort();
+          const finalData: OrganizedData = {};
+          sortedRooms.forEach(room => {
+              finalData[room] = organizedData[room].sort((a,b) => a.rackNo.localeCompare(b.rackNo));
+          });
+          
+          setData(finalData);
+          setLoading(false);
       });
-
-      // Sort racks and shelves
-      for(const room in organizedData) {
-        organizedData[room].sort((a,b) => a.rackNo.localeCompare(b.rackNo));
-        organizedData[room].forEach(rack => {
-            rack.shelves.sort((a, b) => parseInt(a.shelfNo, 10) - parseInt(b.shelfNo, 10))
-        });
-      }
-      
-      setData(organizedData);
-      setLoading(false);
+      return () => unsubscribeShelves();
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeRacks();
   }, []);
 
   const handleEditRack = (rack: Rack) => {
@@ -125,16 +129,24 @@ export default function ExistingStorageLayout() {
                       </Button>
                     </CardHeader>
                     <CardContent className="p-4 flex-1">
-                      <div className="text-sm space-y-2">
-                        <p className='font-medium'>
-                           <span className='font-bold'>{rack.shelves.length}</span> shelves
-                        </p>
-                        {rack.shelves.length > 0 && (
-                            <p className='font-medium'>
-                                <span className='font-bold'>{rack.shelves[0].capacity}</span> files per shelf
-                            </p>
-                        )}
-                      </div>
+                      <dl className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                            <dt className="font-medium text-muted-foreground">Rows</dt>
+                            <dd className="font-bold">{rack.rows}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                            <dt className="font-medium text-muted-foreground">Columns</dt>
+                            <dd className="font-bold">{rack.cols}</dd>
+                        </div>
+                         <div className="flex justify-between">
+                            <dt className="font-medium text-muted-foreground">Shelves</dt>
+                            <dd className="font-bold">{rack.rows * rack.cols}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                            <dt className="font-medium text-muted-foreground">Capacity per Shelf</dt>
+                            <dd className="font-bold">{rack.capacity}</dd>
+                        </div>
+                      </dl>
                     </CardContent>
                   </Card>
                 ))}

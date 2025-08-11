@@ -1,7 +1,7 @@
 
 'use client';
 import { useState } from 'react';
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { getDatabase, ref, set, get, update } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -90,18 +90,26 @@ export default function StorageBuilder() {
   const handleSaveLayout = async () => {
     const db = getDatabase(app);
     const shelvesMetaRef = ref(db, 'shelvesMetadata');
-    const snapshot = await get(shelvesMetaRef);
-    const existingData: {[key: string]: Shelf} = snapshot.val() || {};
-    const existingRooms = new Set(Object.values(existingData).map(s => s.roomNo));
+    const racksMetaRef = ref(db, 'racksMetadata');
+    
+    const [shelvesSnapshot, racksSnapshot] = await Promise.all([
+        get(shelvesMetaRef),
+        get(racksMetaRef)
+    ]);
+    const existingShelves: {[key: string]: Shelf} = shelvesSnapshot.val() || {};
+    const existingRacks: {[key: string]: any} = racksSnapshot.val() || {};
+
+    const existingRooms = new Set(Object.values(existingRacks).map(r => r.roomNo));
     const existingRacksByRoom: {[room: string]: Set<string>} = {};
-    Object.values(existingData).forEach(s => {
-        if (!existingRacksByRoom[s.roomNo]) {
-            existingRacksByRoom[s.roomNo] = new Set();
+    Object.values(existingRacks).forEach(r => {
+        if (!existingRacksByRoom[r.roomNo]) {
+            existingRacksByRoom[r.roomNo] = new Set();
         }
-        existingRacksByRoom[s.roomNo].add(s.rackNo);
+        existingRacksByRoom[r.roomNo].add(r.rackNo);
     });
 
     let newShelvesData: { [key: string]: any } = {};
+    let newRacksData: { [key: string]: any } = {};
     let error = false;
 
     if (rooms.length === 0) {
@@ -150,11 +158,26 @@ export default function StorageBuilder() {
                 error = true;
                 break;
             }
+            if (isNaN(rack.shelfCapacity) || rack.shelfCapacity <= 0) {
+                toast({ title: 'Invalid Capacity', description: `Capacity for shelves in rack "${rackName}" must be a positive number.`, variant: 'destructive'});
+                error = true;
+                break;
+            }
+
+            const rackId = `${roomName}-${rackName}`.replace(/\s+/g, '-');
+            newRacksData[rackId] = {
+                id: rackId,
+                roomNo: roomName,
+                rackNo: rackName,
+                rows: Number(rack.rows),
+                cols: Number(rack.cols),
+                capacity: Number(rack.shelfCapacity)
+            };
             
             const totalShelves = rack.rows * rack.cols;
             
             for(let i = 1; i <= totalShelves; i++) {
-                const shelfId = `${roomName}-${rackName}-${i}`.replace(/\s+/g, '-');
+                const shelfId = `${rackId}-${i}`;
                 newShelvesData[shelfId] = {
                     id: shelfId,
                     roomNo: roomName,
@@ -171,9 +194,9 @@ export default function StorageBuilder() {
     if (error) return;
     
     try {
-        const combinedData = {...existingData, ...newShelvesData };
+        await update(racksMetaRef, newRacksData);
+        await update(shelvesMetaRef, newShelvesData);
 
-        await set(shelvesMetaRef, combinedData);
         toast({ title: 'Layout Saved', description: 'Your storage layout has been successfully saved.' });
         setRooms([]);
     } catch (e) {
