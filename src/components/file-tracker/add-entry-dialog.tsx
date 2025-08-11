@@ -30,9 +30,7 @@ import { cn } from '@/lib/utils';
 
 type LocationData = {
   [room: string]: {
-    [rack: string]: {
-      [shelf: string]: Entry[];
-    };
+    [rack: string]: Shelf[];
   };
 };
 
@@ -82,7 +80,6 @@ export function AddEntryDialog({
   const itemStates = {
     fileType: { list: docTypes, setList: setDocTypes, dbPath: 'docTypes' },
     company: { list: companies, setList: setCompanies, dbPath: 'companies' },
-    // Room, rack, shelf are now derived from entries
     room: { list: [], setList: () => {}, dbPath: 'rooms'},
     rack: { list: [], setList: () => {}, dbPath: 'racks'},
     shelf: { list: [], setList: () => {}, dbPath: 'shelves'},
@@ -92,7 +89,6 @@ export function AddEntryDialog({
     if (isOpen) {
       const db = getDatabase(app);
 
-      // Fetch simple lists
       const fetchSimpleData = (path: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
         const dataRef = ref(db, path);
         const unsubscribe = onValue(dataRef, (snapshot) => {
@@ -106,33 +102,32 @@ export function AddEntryDialog({
       const unsubCompanies = fetchSimpleData('companies', setCompanies);
       const unsubDocTypes = fetchSimpleData('docTypes', setDocTypes);
 
-      // Fetch all entries to build location hierarchy
       const entriesRef = ref(db, 'entries');
       const unsubEntries = onValue(entriesRef, (snapshot) => {
           const entries: Entry[] = [];
-          const groupedData: LocationData = {};
           snapshot.forEach((childSnapshot) => {
-            const entry = { id: childSnapshot.key!, ...childSnapshot.val() };
-            entries.push(entry);
-            const { roomNo, rackNo, shelfNo } = entry;
-            if (roomNo && rackNo && shelfNo) {
-              if (!groupedData[roomNo]) groupedData[roomNo] = {};
-              if (!groupedData[roomNo][rackNo]) groupedData[roomNo][rackNo] = {};
-              if (!groupedData[roomNo][rackNo][shelfNo]) groupedData[roomNo][rackNo][shelfNo] = [];
-              groupedData[roomNo][rackNo][shelfNo].push(entry);
-            }
+            entries.push({ id: childSnapshot.key!, ...childSnapshot.val() });
           });
           setAllEntries(entries);
-          setLocationData(groupedData);
       });
       
       const shelvesRef = ref(db, 'shelvesMetadata');
       const unsubShelves = onValue(shelvesRef, (shelfSnapshot) => {
         const shelvesData: Shelf[] = [];
+        const groupedData: LocationData = {};
         shelfSnapshot.forEach((childSnapshot) => {
-          shelvesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+          const shelf: Shelf = { id: childSnapshot.key!, ...childSnapshot.val() };
+          shelvesData.push(shelf);
+          
+          const { roomNo, rackNo } = shelf;
+          if (roomNo && rackNo) {
+            if (!groupedData[roomNo]) groupedData[roomNo] = {};
+            if (!groupedData[roomNo][rackNo]) groupedData[roomNo][rackNo] = [];
+            groupedData[roomNo][rackNo].push(shelf);
+          }
         });
         setShelves(shelvesData);
+        setLocationData(groupedData);
       });
 
       return () => {
@@ -233,21 +228,6 @@ export function AddEntryDialog({
 
     await set(newEntryRef, entryToSave);
 
-    if (newEntry.roomNo && newEntry.rackNo && newEntry.shelfNo) {
-        const shelfId = `${newEntry.roomNo}-${newEntry.rackNo}-${newEntry.shelfNo}`;
-        const shelfRef = ref(db, `shelvesMetadata/${shelfId}`);
-        const shelfSnap = await get(shelfRef);
-        if (!shelfSnap.exists()) {
-            await set(shelfRef, {
-                id: shelfId,
-                roomNo: newEntry.roomNo,
-                rackNo: newEntry.rackNo,
-                shelfNo: newEntry.shelfNo,
-                capacity: 20, // Default capacity
-            });
-        }
-    }
-
     toast({
       title: 'Entry Saved',
       description: `File ${newEntry.fileNo} has been created.`,
@@ -269,14 +249,16 @@ export function AddEntryDialog({
   
   const roomOptions = Object.keys(locationData).sort();
   const rackOptions = newEntry.roomNo ? Object.keys(locationData[newEntry.roomNo] || {}).sort() : [];
-  const shelfOptions = (newEntry.roomNo && newEntry.rackNo) ? Object.keys(locationData[newEntry.roomNo]?.[newEntry.rackNo] || {}).sort() : [];
+  const shelfOptions = (newEntry.roomNo && newEntry.rackNo) ? (locationData[newEntry.roomNo]?.[newEntry.rackNo] || []).map(s => s.shelfNo).sort((a,b) => Number(a) - Number(b)) : [];
   
   const selectedShelfInfo = shelves.find(s => s.roomNo === newEntry.roomNo && s.rackNo === newEntry.rackNo && s.shelfNo === newEntry.shelfNo);
   const occupiedPositions = useMemo(() => {
     if (!selectedShelfInfo) return [];
-    const filesOnShelf = locationData[newEntry.roomNo]?.[newEntry.rackNo]?.[newEntry.shelfNo] || [];
-    return filesOnShelf.map(f => f.boxNo && parseInt(f.boxNo, 10)).filter(p => !isNaN(p));
-  }, [newEntry.roomNo, newEntry.rackNo, newEntry.shelfNo, locationData, selectedShelfInfo]);
+    return allEntries
+      .filter(e => e.roomNo === selectedShelfInfo.roomNo && e.rackNo === selectedShelfInfo.rackNo && e.shelfNo === selectedShelfInfo.shelfNo && e.boxNo)
+      .map(f => parseInt(f.boxNo, 10))
+      .filter(p => !isNaN(p));
+  }, [newEntry.roomNo, newEntry.rackNo, newEntry.shelfNo, allEntries, selectedShelfInfo]);
 
   return (
     <>
@@ -382,7 +364,6 @@ export function AddEntryDialog({
                             {roomOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('room')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -394,7 +375,6 @@ export function AddEntryDialog({
                             {rackOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                     <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('rack')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -406,7 +386,6 @@ export function AddEntryDialog({
                             {shelfOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                     <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('shelf')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -497,5 +476,3 @@ export function AddEntryDialog({
     </>
   );
 }
-
-    

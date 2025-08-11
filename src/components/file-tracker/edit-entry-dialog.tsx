@@ -31,9 +31,7 @@ import { cn } from '@/lib/utils';
 
 type LocationData = {
   [room: string]: {
-    [rack: string]: {
-      [shelf: string]: Entry[];
-    };
+    [rack: string]: Shelf[];
   };
 };
 
@@ -94,31 +92,31 @@ export function EditEntryDialog({
       const unsubDocTypes = fetchSimpleData('docTypes', setDocTypes);
 
       const entriesRef = ref(db, 'entries');
-      const unsubEntries = onValue(entriesRef, (snapshot) => {
+       const unsubEntries = onValue(entriesRef, (snapshot) => {
           const entries: Entry[] = [];
-          const groupedData: LocationData = {};
           snapshot.forEach((childSnapshot) => {
-            const entry = { id: childSnapshot.key!, ...childSnapshot.val() };
-            entries.push(entry);
-            const { roomNo, rackNo, shelfNo } = entry;
-            if (roomNo && rackNo && shelfNo) {
-              if (!groupedData[roomNo]) groupedData[roomNo] = {};
-              if (!groupedData[roomNo][rackNo]) groupedData[roomNo][rackNo] = {};
-              if (!groupedData[roomNo][rackNo][shelfNo]) groupedData[roomNo][rackNo][shelfNo] = [];
-              groupedData[roomNo][rackNo][shelfNo].push(entry);
-            }
+            entries.push({ id: childSnapshot.key!, ...childSnapshot.val() });
           });
           setAllEntries(entries);
-          setLocationData(groupedData);
       });
       
       const shelvesRef = ref(db, 'shelvesMetadata');
       const unsubShelves = onValue(shelvesRef, (shelfSnapshot) => {
         const shelvesData: Shelf[] = [];
+        const groupedData: LocationData = {};
         shelfSnapshot.forEach((childSnapshot) => {
-          shelvesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+          const shelf: Shelf = { id: childSnapshot.key!, ...childSnapshot.val() };
+          shelvesData.push(shelf);
+          
+          const { roomNo, rackNo } = shelf;
+          if (roomNo && rackNo) {
+            if (!groupedData[roomNo]) groupedData[roomNo] = {};
+            if (!groupedData[roomNo][rackNo]) groupedData[roomNo][rackNo] = [];
+            groupedData[roomNo][rackNo].push(shelf);
+          }
         });
         setShelves(shelvesData);
+        setLocationData(groupedData);
       });
 
       return () => {
@@ -215,21 +213,6 @@ export function EditEntryDialog({
 
     await update(entryRef, firebaseData);
 
-    if (editedEntry.roomNo && editedEntry.rackNo && editedEntry.shelfNo) {
-        const shelfId = `${editedEntry.roomNo}-${editedEntry.rackNo}-${editedEntry.shelfNo}`;
-        const shelfRef = ref(db, `shelvesMetadata/${shelfId}`);
-        const shelfSnap = await get(shelfRef);
-        if (!shelfSnap.exists()) {
-            await set(shelfRef, {
-                id: shelfId,
-                roomNo: editedEntry.roomNo,
-                rackNo: editedEntry.rackNo,
-                shelfNo: editedEntry.shelfNo,
-                capacity: 20, // Default capacity
-            });
-        }
-    }
-
     toast({
       title: 'Entry Updated',
       description: `File ${editedEntry.fileNo} has been successfully updated.`,
@@ -243,15 +226,16 @@ export function EditEntryDialog({
   
   const roomOptions = Object.keys(locationData).sort();
   const rackOptions = editedEntry.roomNo ? Object.keys(locationData[editedEntry.roomNo] || {}).sort() : [];
-  const shelfOptions = (editedEntry.roomNo && editedEntry.rackNo) ? Object.keys(locationData[editedEntry.roomNo]?.[editedEntry.rackNo] || {}).sort() : [];
+  const shelfOptions = (editedEntry.roomNo && editedEntry.rackNo) ? (locationData[editedEntry.roomNo]?.[editedEntry.rackNo] || []).map(s => s.shelfNo).sort((a,b) => Number(a) - Number(b)) : [];
   
   const selectedShelfInfo = shelves.find(s => s.roomNo === editedEntry.roomNo && s.rackNo === editedEntry.rackNo && s.shelfNo === editedEntry.shelfNo);
   const occupiedPositions = useMemo(() => {
     if (!selectedShelfInfo) return [];
-    const filesOnShelf = locationData[editedEntry.roomNo]?.[editedEntry.rackNo]?.[editedEntry.shelfNo] || [];
-    // Exclude current file from occupied check
-    return filesOnShelf.filter(f => f.id !== editedEntry.id).map(f => f.boxNo && parseInt(f.boxNo, 10)).filter(p => !isNaN(p));
-  }, [editedEntry.roomNo, editedEntry.rackNo, editedEntry.shelfNo, editedEntry.id, locationData, selectedShelfInfo]);
+    return allEntries
+      .filter(e => e.id !== editedEntry.id && e.roomNo === selectedShelfInfo.roomNo && e.rackNo === selectedShelfInfo.rackNo && e.shelfNo === selectedShelfInfo.shelfNo && e.boxNo)
+      .map(f => parseInt(f.boxNo, 10))
+      .filter(p => !isNaN(p));
+  }, [editedEntry.roomNo, editedEntry.rackNo, editedEntry.shelfNo, editedEntry.id, allEntries, selectedShelfInfo]);
 
 
   return (
@@ -357,7 +341,6 @@ export function EditEntryDialog({
                             {roomOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('room')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -369,7 +352,6 @@ export function EditEntryDialog({
                             {rackOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                     <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('rack')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -381,7 +363,6 @@ export function EditEntryDialog({
                             {shelfOptions.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                     <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('shelf')}><PlusCircle className="h-4 w-4" /></Button>
                 </div>
             </div>
             <div className="space-y-2">
@@ -402,7 +383,7 @@ export function EditEntryDialog({
                           {Array.from({length: selectedShelfInfo.capacity}, (_, i) => {
                               const pos = i + 1;
                               const isOccupied = occupiedPositions.includes(pos);
-                              const isCurrent = Number(entry.boxNo) === pos;
+                              const isCurrent = Number(entry.boxNo) === pos && entry.shelfNo === editedEntry.shelfNo;
                               
                               return (
                                   <div key={pos} className={cn(
@@ -476,5 +457,3 @@ export function EditEntryDialog({
     </>
   );
 }
-
-    

@@ -1,7 +1,7 @@
 
 'use client';
 import { useState } from 'react';
-import { getDatabase, ref, set } from 'firebase/database';
+import { getDatabase, ref, set, get } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Library, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Shelf } from './types';
 
 type Rack = {
   id: string;
@@ -89,7 +90,7 @@ export default function StorageBuilder() {
 
   const handleSaveLayout = async () => {
     const db = getDatabase(app);
-    let allShelvesData: { [key: string]: any } = {};
+    let newShelvesData: { [key: string]: any } = {};
     let error = false;
 
     if (rooms.length === 0) {
@@ -125,7 +126,7 @@ export default function StorageBuilder() {
             
             for(let i = 1; i <= totalShelves; i++) {
                 const shelfId = `${room.name}-${rack.name}-${i}`.replace(/\s+/g, '-');
-                allShelvesData[shelfId] = {
+                newShelvesData[shelfId] = {
                     id: shelfId,
                     roomNo: room.name,
                     rackNo: rack.name,
@@ -140,7 +141,12 @@ export default function StorageBuilder() {
     
     try {
         const shelvesMetaRef = ref(db, 'shelvesMetadata');
-        await set(shelvesMetaRef, allShelvesData);
+        // Fetch existing data to merge, not overwrite
+        const snapshot = await get(shelvesMetaRef);
+        const existingData = snapshot.val() || {};
+        const combinedData = {...existingData, ...newShelvesData };
+
+        await set(shelvesMetaRef, combinedData);
         toast({ title: 'Layout Saved', description: 'Your storage layout has been successfully saved.' });
         setRooms([]);
     } catch (e) {
@@ -180,10 +186,19 @@ export default function StorageBuilder() {
       <CardHeader>
         <CardTitle>Storage Layout Builder</CardTitle>
         <CardDescription>
-          Define your physical storage layout. Add rooms, then add racks to each room with a defined shelf structure.
+          Define your physical storage layout. Add rooms, then add racks to each room with a defined shelf structure. Your saved layouts will be combined with any existing ones.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex justify-between items-center border-t pt-6">
+            <Button onClick={handleAddRoom}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Room
+            </Button>
+            <Button onClick={handleSaveLayout} disabled={rooms.length === 0}>
+                Save Current Layout Additions
+            </Button>
+        </div>
+
         <div className="space-y-4">
             {rooms.map((room) => (
                 <Card key={room.id} className="p-4 bg-background border-2">
@@ -264,17 +279,6 @@ export default function StorageBuilder() {
                 </Card>
             ))}
         </div>
-
-        <Button onClick={handleAddRoom}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Room
-        </Button>
-
-        <div className="border-t pt-6 flex justify-end">
-            <Button onClick={handleSaveLayout} disabled={rooms.length === 0}>
-                Save Storage Layout
-            </Button>
-        </div>
-
       </CardContent>
     </Card>
   );
