@@ -123,12 +123,12 @@ export default function ShelfView() {
       </CardHeader>
       <CardContent className="space-y-8">
         {sortedRooms.map((room) => (
-          <div key={room}>
+          <div key={room} className="border-2 border-muted rounded-lg p-4">
             <div className="flex items-center gap-3 mb-4">
               <Building className="h-6 w-6 text-primary" />
               <h2 className="text-xl font-bold">Room: {room}</h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 pl-8">
               {Object.keys(data[room]).sort().map((rack) => (
                 <div key={rack} className="border-4 border-muted-foreground p-4 bg-muted/20 rounded-lg">
                    <div className="flex items-center gap-3 mb-4">
