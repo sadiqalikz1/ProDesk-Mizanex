@@ -6,7 +6,7 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import TaxonomyManager from '@/components/file-tracker/taxonomy-manager';
+import StorageBuilder from '@/components/file-tracker/storage-builder';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function StorageManagementPage() {
           <main className="flex-1 p-4 sm:p-6 md:p-8">
             <div className="mx-auto w-11/12 space-y-8">
                <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Taxonomy Management</h1>
+                <h1 className="text-2xl font-bold">Storage Builder</h1>
                 <Button asChild variant="outline">
                   <Link href="/physical-file-tracker">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -31,7 +31,7 @@ export default function StorageManagementPage() {
                   </Link>
                 </Button>
               </div>
-              <TaxonomyManager />
+              <StorageBuilder />
             </div>
           </main>
         </SidebarInset>
