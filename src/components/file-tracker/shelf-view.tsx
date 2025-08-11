@@ -12,16 +12,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-<<<<<<< HEAD
-import { Building, Library, Archive, FileText, XCircle } from 'lucide-react';
-import { Entry, Shelf } from './types';
-=======
 import { Building, Library, Settings } from 'lucide-react';
 import { Entry, Shelf } from './types';
 import { cn } from '@/lib/utils';
 import { EditShelfDialog } from './edit-shelf-dialog';
 import { Button } from '../ui/button';
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
 
 type OrganizedData = {
   [room: string]: {
@@ -41,12 +36,12 @@ export default function ShelfView() {
   useEffect(() => {
     const db = getDatabase(app);
     const entriesRef = ref(db, 'entries');
-    const shelvesRef = ref(db, 'shelves');
+    const shelvesRef = ref(db, 'shelvesMetadata');
 
     const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
       const entries: Entry[] = [];
       snapshot.forEach((childSnapshot) => {
-        entries.push({ id: childSnapshot.key, ...childSnapshot.val() });
+        entries.push({ id: childSnapshot.key!, ...childSnapshot.val() });
       });
 
       const unsubscribeShelves = onValue(shelvesRef, (shelfSnapshot) => {
@@ -58,6 +53,8 @@ export default function ShelfView() {
         const organizedData: OrganizedData = {};
         shelves.forEach((shelf) => {
           const { roomNo, rackNo, shelfNo } = shelf;
+          if (!roomNo || !rackNo || !shelfNo) return;
+          
           if (!organizedData[roomNo]) organizedData[roomNo] = {};
           if (!organizedData[roomNo][rackNo]) organizedData[roomNo][rackNo] = [];
 
@@ -124,63 +121,6 @@ export default function ShelfView() {
           A virtual layout of your physical shelves, showing occupied and empty slots.
         </CardDescription>
       </CardHeader>
-<<<<<<< HEAD
-      <CardContent>
-        <Accordion type="multiple" className="w-full space-y-2">
-          {sortedRooms.map((room) => (
-            <AccordionItem value={`room-${room}`} key={room} className="border rounded-md px-4">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <Building className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Room: {room}</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pl-8 pt-4">
-                <Accordion type="multiple" className="w-full space-y-2">
-                  {Object.keys(data[room]).sort().map((rack) => (
-                    <AccordionItem value={`rack-${rack}`} key={rack} className="border rounded-md px-4">
-                       <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-3">
-                          <Library className="h-5 w-5 text-primary" />
-                          <span className="font-semibold">Rack: {rack}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-8 pt-4">
-                        <div className="space-y-6">
-                            {data[room][rack].map(({ shelf, files }) => (
-                                <div key={shelf.id}>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <Archive className="h-5 w-5 text-primary" />
-                                        <h4 className="font-semibold">Shelf: {shelf.shelfNo} (Capacity: {shelf.capacity})</h4>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 border p-2 rounded-lg bg-muted/20">
-                                        {Array.from({ length: shelf.capacity }, (_, i) => {
-                                            const position = i + 1;
-                                            const file = files.find(f => parseInt(f.boxNo, 10) === position);
-
-                                            return (
-                                                <div key={position} className={`relative flex flex-col items-center justify-center p-2 rounded-md h-28 text-center text-xs border-2 ${file ? 'border-primary/50 bg-background' : 'border-dashed border-muted-foreground/50 bg-muted/50'}`}>
-                                                    <div className="absolute top-1 right-1 font-bold text-muted-foreground/50">{position}</div>
-                                                    {file ? (
-                                                        <>
-                                                            <FileText className="h-6 w-6 mb-1 text-primary"/>
-                                                            <p className="font-bold break-all">{file.fileNo}</p>
-                                                            <p className="text-muted-foreground break-all">{file.fileType}</p>
-                                                             <Badge variant={getStatusVariant(file.status)} className="mt-1">{file.status}</Badge>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <XCircle className="h-6 w-6 mb-1 text-muted-foreground/50"/>
-                                                            <p className="text-muted-foreground font-medium">Empty</p>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-=======
       <CardContent className="space-y-8">
         {sortedRooms.map((room) => (
           <div key={room}>
@@ -205,9 +145,9 @@ export default function ShelfView() {
                             </Button>
                           </div>
                           <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
-                              {Array.from({ length: shelf.capacity }, (_, i) => {
+                              {Array.from({ length: shelf.capacity || 20 }, (_, i) => {
                                   const position = i + 1;
-                                  const file = files.find(f => parseInt(f.boxNo, 10) === position);
+                                  const file = files.find(f => f.boxNo && parseInt(f.boxNo, 10) === position);
 
                                   return (
                                     <div key={position} className={cn(
@@ -234,7 +174,6 @@ export default function ShelfView() {
                                   )
                               })}
                           </div>
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
                         </div>
                     ))}
                   </div>

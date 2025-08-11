@@ -1,12 +1,7 @@
 
 'use client';
-<<<<<<< HEAD
-import { useState, useEffect } from 'react';
-import { getDatabase, ref, update, get, push } from 'firebase/database';
-=======
 import { useState, useEffect, useRef } from 'react';
-import { getDatabase, ref, update, get, push, set } from 'firebase/database';
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
+import { getDatabase, ref, update, get, set } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Dialog,
@@ -46,17 +41,9 @@ export function EditEntryDialog({
   const [editedEntry, setEditedEntry] = useState<Entry>(entry);
   const [companies, setCompanies] = useState<string[]>([]);
   const [docTypes, setDocTypes] = useState<string[]>([]);
-<<<<<<< HEAD
-    const [confirmation, setConfirmation] = useState<{
-    type: 'company' | 'fileType' | null;
-    value: string;
-    open: boolean;
-  }>({ type: null, value: '', open: false });
-=======
   const [rooms, setRooms] = useState<string[]>([]);
   const [racks, setRacks] = useState<string[]>([]);
   const [shelves, setShelves] = useState<string[]>([]);
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
   const { toast } = useToast();
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
@@ -81,28 +68,28 @@ export function EditEntryDialog({
     setCompanySearch(entry.company || '');
     if (isOpen) {
         const db = getDatabase(app);
-        const companiesRef = ref(db, 'companies');
-        const docTypesRef = ref(db, 'docTypes');
-
-        get(companiesRef).then((snapshot) => {
-            if (snapshot.exists()) {
-<<<<<<< HEAD
-            setCompanies(Object.values(snapshot.val()));
-=======
-                const data = snapshot.val();
-                 if (typeof data === 'object' && data !== null) {
-                    setter(Object.values(data));
-                } else if (Array.isArray(data)) {
-                    setter(data.filter(v => typeof v === 'string'));
+        const fetchData = (path: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+            const dataRef = ref(db, path);
+            get(dataRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const loadedItems: string[] = [];
+                    if (typeof data === 'object' && data !== null) {
+                        Object.values(data).forEach(item => {
+                            if (typeof item === 'string') {
+                                loadedItems.push(item);
+                            }
+                        });
+                    }
+                    setter(loadedItems);
                 }
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
-            }
-        });
-        get(docTypesRef).then((snapshot) => {
-            if (snapshot.exists()) {
-            setDocTypes(Object.values(snapshot.val()));
-            }
-        });
+            });
+        }
+        fetchData('companies', setCompanies);
+        fetchData('docTypes', setDocTypes);
+        fetchData('rooms', setRooms);
+        fetchData('racks', setRacks);
+        fetchData('shelves', setShelves);
     }
   }, [entry, isOpen]);
   
@@ -120,33 +107,6 @@ export function EditEntryDialog({
     setEditedEntry((prev) => ({ ...prev, [field]: value }));
   };
 
-<<<<<<< HEAD
-  const handleConfirmCreate = (type: 'company' | 'fileType', value: string) => {
-    const existing = type === 'company' ? companies : docTypes;
-    if (existing.some(item => item.toLowerCase() === value.toLowerCase())) {
-        toast({
-            title: 'Duplicate Entry',
-            description: `"${value}" already exists.`,
-            variant: 'destructive',
-        });
-        return;
-    }
-    setConfirmation({ type, value, open: true });
-  }
-
-  const handleCreateConfirmed = () => {
-      if (confirmation.type && confirmation.value) {
-          if (confirmation.type === 'company') {
-              setCompanies(prev => [...prev, confirmation.value]);
-              handleChange('company', confirmation.value);
-          } else {
-              setDocTypes(prev => [...prev, confirmation.value]);
-              handleChange('fileType', confirmation.value);
-          }
-      }
-      setConfirmation({ type: null, value: '', open: false });
-  }
-=======
   const handleOpenAddItemDialog = (type: ItemType) => {
     setAddItemDialogType(type);
     setAddItemDialogOpen(true);
@@ -165,14 +125,11 @@ export function EditEntryDialog({
         stateInfo.setList(prev => [...prev, value]);
     }
     
+    handleChange(fieldMap[type], value);
     if (type === 'company') {
         setCompanySearch(value);
-        handleChange('company', value);
-    } else {
-        handleChange(fieldMap[type], value);
     }
   };
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
 
   const handleSave = async () => {
     if (!editedEntry.fileNo || !editedEntry.fileType || !editedEntry.company) {
@@ -192,20 +149,6 @@ export function EditEntryDialog({
         entryToUpdate.dateCreated = entryToUpdate.dateCreated.toISOString();
     }
 
-<<<<<<< HEAD
-
-    // Firebase cannot store `id` within the object itself
-    const { id, ...firebaseData } = entryToUpdate;
-
-    await update(entryRef, firebaseData);
-    
-    const dbCompaniesRef = ref(db, 'companies');
-    const dbDocTypesRef = ref(db, 'docTypes');
-    const currentCompaniesSnap = await get(dbCompaniesRef);
-    const currentCompanies = currentCompaniesSnap.exists() ? Object.values(currentCompaniesSnap.val()) : [];
-    if (!currentCompanies.some((c:any) => c.toLowerCase() === editedEntry.company.toLowerCase())) {
-        await push(dbCompaniesRef, editedEntry.company);
-=======
     const { id, ...firebaseData } = entryToUpdate;
 
     await update(entryRef, firebaseData);
@@ -223,13 +166,6 @@ export function EditEntryDialog({
                 capacity: 20, 
             });
         }
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
-    }
-
-    const currentDocTypesSnap = await get(dbDocTypesRef);
-    const currentDocTypes = currentDocTypesSnap.exists() ? Object.values(currentDocTypesSnap.val()) : [];
-    if (!currentDocTypes.some((d:any) => d.toLowerCase() === editedEntry.fileType.toLowerCase())) {
-        await push(dbDocTypesRef, editedEntry.fileType);
     }
 
     toast({
@@ -315,22 +251,26 @@ export function EditEntryDialog({
                         onFocus={() => setShowCompanyResults(true)}
                         className="pl-10"
                     />
-                     {showCompanyResults && companySearch && filteredCompanies.length > 0 && (
+                     {showCompanyResults && companySearch && (
                         <Card className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto">
                             <CardContent className="p-2">
-                                {filteredCompanies.map(company => (
-                                    <div 
-                                        key={company}
-                                        onClick={() => {
-                                            setCompanySearch(company);
-                                            handleChange('company', company);
-                                            setShowCompanyResults(false);
-                                        }}
-                                        className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm"
-                                    >
-                                        {company}
-                                    </div>
-                                ))}
+                               {filteredCompanies.length > 0 ? (
+                                    filteredCompanies.map(company => (
+                                        <div 
+                                            key={company}
+                                            onClick={() => {
+                                                setCompanySearch(company);
+                                                handleChange('company', company);
+                                                setShowCompanyResults(false);
+                                            }}
+                                            className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm"
+                                        >
+                                            {company}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-2 text-center text-sm text-muted-foreground">No companies found.</div>
+                                )}
                             </CardContent>
                         </Card>
                     )}
@@ -353,36 +293,9 @@ export function EditEntryDialog({
               onChange={(e) => handleChange('description', e.target.value)}
             />
           </div>
-<<<<<<< HEAD
-          <div className="space-y-2">
-            <Label htmlFor="roomNo">Room Number</Label>
-            <Input
-              id="roomNo"
-              value={editedEntry.roomNo || ''}
-              onChange={(e) => handleChange('roomNo', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="rackNo">Rack Number</Label>
-            <Input
-              id="rackNo"
-              value={editedEntry.rackNo || ''}
-              onChange={(e) => handleChange('rackNo', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="shelfNo">Shelf Number</Label>
-            <Input
-              id="shelfNo"
-              value={editedEntry.shelfNo || ''}
-              onChange={(e) => handleChange('shelfNo', e.target.value)}
-            />
-          </div>
-=======
           {renderSelectWithAdd("Room Number", "room", editedEntry.roomNo, "Select a room...")}
           {renderSelectWithAdd("Rack Number", "rack", editedEntry.rackNo, "Select a rack...")}
           {renderSelectWithAdd("Shelf Number", "shelf", editedEntry.shelfNo, "Select a shelf...")}
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
           <div className="space-y-2">
             <Label htmlFor="boxNo">Box/Folder Number</Label>
             <Input
@@ -425,27 +338,6 @@ export function EditEntryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-<<<<<<< HEAD
-     <AlertDialog open={confirmation.open} onOpenChange={(open) => !open && setConfirmation({type: null, value: '', open: false})}>
-        <AlertDialogContent onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleCreateConfirmed();
-          }
-        }}>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Create new {confirmation.type === 'company' ? 'Company' : 'File Type'}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Are you sure you want to create a new entry for "{confirmation.value}"?
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCreateConfirmed}>Create</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-=======
      {addItemDialogType && (
         <AddSimpleItemDialog
             isOpen={isAddItemDialogOpen}
@@ -456,7 +348,6 @@ export function EditEntryDialog({
             dbPath={itemStates[addItemDialogType].dbPath}
         />
       )}
->>>>>>> ffdb343 (RACK CREATION METHOD ADDED)
     </>
   );
 }
