@@ -16,9 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Entry, LocationHistory } from './types';
-import { Combobox } from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Search } from 'lucide-react';
 
 type DuplicateError = {
   file: Entry;
@@ -27,14 +27,17 @@ type DuplicateError = {
 
 export default function QuickAddToFile() {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [selectedFileId, setSelectedFileId] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<Entry | null>(null);
   const [docNumber, setDocNumber] = useState('');
   const [docPosition, setDocPosition] = useState('');
   const [notes, setNotes] = useState('');
   const [duplicateError, setDuplicateError] = useState<DuplicateError | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showResults, setShowResults] = useState(false);
+
   const { toast } = useToast();
   const docNumberInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -56,11 +59,8 @@ export default function QuickAddToFile() {
   }, []);
   
   useEffect(() => {
-    const file = entries.find((e) => e.id === selectedFileId) || null;
-    setSelectedFile(file);
-
-    if (file) {
-      const history = file.locationHistory || [];
+    if (selectedFile) {
+      const history = selectedFile.locationHistory || [];
       const existingPositions = history
         .map(h => {
           const match = h.notes?.match(/\(Pos: (\d+)\)/);
@@ -81,11 +81,23 @@ export default function QuickAddToFile() {
     } else {
       setDocPosition('');
     }
-  }, [selectedFileId, entries]);
+  }, [selectedFile]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
 
-  const handleFileSelect = (fileId: string) => {
-      setSelectedFileId(fileId);
+  const handleFileSelect = (file: Entry) => {
+      setSelectedFile(file);
+      setSearchTerm(`${file.fileNo} - ${file.fileType} - ${file.company}`);
+      setShowResults(false);
       setDuplicateError(null);
   }
 
@@ -101,7 +113,7 @@ export default function QuickAddToFile() {
         event.preventDefault();
     }
 
-    if (!selectedFileId) {
+    if (!selectedFile) {
       toast({
         title: 'Missing File',
         description: 'Please select a file.',
@@ -110,14 +122,10 @@ export default function QuickAddToFile() {
       return;
     }
 
-    const entry = entries.find((e) => e.id === selectedFileId);
-
-    if (!entry) {
-      toast({ title: 'Error', description: 'Selected file not found.', variant: 'destructive' });
-      return;
-    }
+    const entry = selectedFile;
 
     if (docNumber) {
+        // Only check for duplicates within the same file type.
         const filesWithSameType = entries.filter(e => e.fileType === entry.fileType);
         let duplicateInfo: DuplicateError | null = null;
 
@@ -133,10 +141,16 @@ export default function QuickAddToFile() {
 
         if (duplicateInfo) {
             setDuplicateError(duplicateInfo);
+            toast({
+                title: `Duplicate Document Number`,
+                description: `Doc #${docNumber} already exists in file: ${duplicateInfo.file.fileNo}`,
+                variant: 'destructive',
+            })
             return;
         }
     }
-
+    
+    // Check for duplicate position *within the current file*
     const existingDocInCurrentFile = (entry.locationHistory || []).some(h =>
         h.notes?.includes(`(Pos: ${docPosition})`)
     );
@@ -150,17 +164,17 @@ export default function QuickAddToFile() {
         return;
     }
 
-    const entryRef = ref(getDatabase(app), `entries/${selectedFileId}`);
+    const entryRef = ref(getDatabase(app), `entries/${selectedFile.id}`);
     
     let constructedNotes = 'Added Doc: ';
     if (docNumber) constructedNotes += `#${docNumber} `;
     if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;
     if (notes) constructedNotes += `- ${notes}`;
 
-    if (!docNumber && !notes) {
+    if (!docNumber && !notes && !docPosition) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide a document number or notes.',
+        description: 'Please provide a document number, position, or notes.',
         variant: 'destructive',
       });
       return;
@@ -181,23 +195,15 @@ export default function QuickAddToFile() {
       title: 'History Added',
       description: `Successfully added a new entry to the history of file ${entry.fileNo}.`,
     });
-
-    // Keep file selected, but clear other fields
+    
+    const updatedSelectedFile = { ...selectedFile, locationHistory: updatedHistory };
+    setSelectedFile(updatedSelectedFile);
+    
     setDocNumber('');
     setNotes('');
     setDuplicateError(null);
-    
-    // Position will be recalculated by useEffect, need to manually trigger update to entries state
-    const updatedEntries = entries.map(e => e.id === selectedFileId ? {...e, locationHistory: updatedHistory} : e);
-    setEntries(updatedEntries); // This state update is what triggers the recalculation
-    setSelectedFileId(selectedFileId); // Re-asserting the selected file to trigger useEffect for position
     docNumberInputRef.current?.focus();
   };
-
-  const fileOptions = entries.map((entry) => ({
-    value: entry.id,
-    label: `${entry.fileNo} - ${entry.company}`,
-  }));
 
   const getDocInfoFromNotes = (notes: string) => {
     if (!notes) return { pos: 'N/A', remaining: 'N/A' };
@@ -206,6 +212,11 @@ export default function QuickAddToFile() {
     const remaining = notes.replace(/Added Doc: #\S+ \s?/, '').replace(/\(Pos: \d+\)\s?/, '').replace(/^- /, '').trim();
     return { pos, remaining: remaining || 'N/A' };
   }
+
+  const filteredEntries = entries.filter(entry => {
+      const fullLabel = `${entry.fileNo} - ${entry.fileType} - ${entry.company}`;
+      return fullLabel.toLowerCase().includes(searchTerm.toLowerCase());
+  }).slice(0, 10); // Limit results to 10 for performance
 
   return (
     <Card>
@@ -217,14 +228,40 @@ export default function QuickAddToFile() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleAddToHistory} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="quick-file-select">Select a file...</Label>
-                <Combobox
-                options={fileOptions}
-                value={selectedFileId}
-                onChange={handleFileSelect}
-                placeholder="Select a file..."
-                />
+            <div className="space-y-2 relative" ref={searchContainerRef}>
+                <Label htmlFor="quick-file-select">Search for a file...</Label>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        id="quick-file-select"
+                        placeholder="Start typing to search for a file..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setShowResults(true);
+                            if (selectedFile && e.target.value === '') {
+                                setSelectedFile(null);
+                            }
+                        }}
+                        onFocus={() => setShowResults(true)}
+                        className="pl-10"
+                    />
+                </div>
+                {showResults && searchTerm && filteredEntries.length > 0 && (
+                    <Card className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto">
+                        <CardContent className="p-2">
+                            {filteredEntries.map(entry => (
+                                <div 
+                                    key={entry.id}
+                                    onClick={() => handleFileSelect(entry)}
+                                    className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm"
+                                >
+                                    {entry.fileNo} - {entry.fileType} - {entry.company}
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
             </div>
             {selectedFile && (
               <Card className="p-4 bg-muted/50">
@@ -296,7 +333,7 @@ export default function QuickAddToFile() {
                 />
             </div>
             <div>
-                <Button type="submit" className="w-full" disabled={!selectedFileId || !!duplicateError}>
+                <Button type="submit" className="w-full" disabled={!selectedFile || !!duplicateError}>
                     Add to History
                 </Button>
             </div>

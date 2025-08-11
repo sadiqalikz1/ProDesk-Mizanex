@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -25,6 +26,7 @@ import {
   Calendar,
   Database,
   FileArchive,
+  Warehouse
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -77,6 +79,14 @@ export function AppSidebar() {
               <Link href="/physical-file-tracker">
                 <FileArchive />
                 <span>File Tracker</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Storage Management">
+              <Link href="/storage-management">
+                <Warehouse />
+                <span>Storage</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
