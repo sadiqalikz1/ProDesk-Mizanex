@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -128,7 +129,7 @@ export default function VirtualFileView() {
                       </AccordionTrigger>
                       <AccordionContent className="pl-8">
                         <Accordion type="multiple" className="w-full space-y-2">
-                          {Object.keys(data[room][rack]).sort().map((shelf) => (
+                          {Object.keys(data[room][rack]).sort((a,b) => Number(a) - Number(b)).map((shelf) => (
                               <AccordionItem value={`shelf-${shelf}`} key={shelf} className="border rounded-md px-4">
                                 <AccordionTrigger className="hover:no-underline">
                                   <div className="flex items-center gap-3">
@@ -140,7 +141,7 @@ export default function VirtualFileView() {
                                 </AccordionTrigger>
                                 <AccordionContent className="pl-8 pt-4">
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {Object.keys(data[room][rack][shelf]).sort().map((box) => (
+                                    {Object.keys(data[room][rack][shelf]).sort((a,b) => Number(a) - Number(b)).map((box) => (
                                         <Card key={box}>
                                           <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
                                             <CardTitle className="text-base flex items-center gap-2">
