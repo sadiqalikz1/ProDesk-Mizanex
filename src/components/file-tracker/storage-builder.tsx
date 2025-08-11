@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Library, Building } from 'lucide-react';
+import { Shelf } from './types';
 
 type NewRack = {
   id: string;
@@ -88,6 +89,18 @@ export default function StorageBuilder() {
 
   const handleSaveLayout = async () => {
     const db = getDatabase(app);
+    const shelvesMetaRef = ref(db, 'shelvesMetadata');
+    const snapshot = await get(shelvesMetaRef);
+    const existingData: {[key: string]: Shelf} = snapshot.val() || {};
+    const existingRooms = new Set(Object.values(existingData).map(s => s.roomNo));
+    const existingRacksByRoom: {[room: string]: Set<string>} = {};
+    Object.values(existingData).forEach(s => {
+        if (!existingRacksByRoom[s.roomNo]) {
+            existingRacksByRoom[s.roomNo] = new Set();
+        }
+        existingRacksByRoom[s.roomNo].add(s.rackNo);
+    });
+
     let newShelvesData: { [key: string]: any } = {};
     let error = false;
 
@@ -96,51 +109,68 @@ export default function StorageBuilder() {
       return;
     }
 
-    rooms.forEach(room => {
-        if (!room.name.trim()) {
-            toast({ title: 'Validation Error', description: `A room name is missing.`, variant: 'destructive'});
+    const newRoomNames = new Set<string>();
+    for (const room of rooms) {
+        const roomName = room.name.trim();
+        if (!roomName) {
+            toast({ title: 'Validation Error', description: 'A room name is missing.', variant: 'destructive'});
             error = true;
-            return;
+            break;
         }
+        if (newRoomNames.has(roomName.toLowerCase()) || existingRooms.has(roomName)) {
+            toast({ title: 'Duplicate Name', description: `Room name "${roomName}" already exists.`, variant: 'destructive'});
+            error = true;
+            break;
+        }
+        newRoomNames.add(roomName.toLowerCase());
+
         if (room.racks.length === 0) {
-            toast({ title: 'Validation Error', description: `Room "${room.name}" has no racks.`, variant: 'destructive'});
+            toast({ title: 'Validation Error', description: `Room "${roomName}" has no racks.`, variant: 'destructive'});
             error = true;
-            return;
+            break;
         }
-        room.racks.forEach(rack => {
-            if (!rack.name.trim()) {
-                toast({ title: 'Validation Error', description: `A rack name is missing in room "${room.name}".`, variant: 'destructive'});
+
+        const newRackNames = new Set<string>();
+        for (const rack of room.racks) {
+            const rackName = rack.name.trim();
+            if (!rackName) {
+                toast({ title: 'Validation Error', description: `A rack name is missing in room "${roomName}".`, variant: 'destructive'});
                 error = true;
-                return;
+                break;
             }
+            if (newRackNames.has(rackName.toLowerCase()) || existingRacksByRoom[roomName]?.has(rackName)) {
+                toast({ title: 'Duplicate Name', description: `Rack name "${rackName}" already exists in room "${roomName}".`, variant: 'destructive'});
+                error = true;
+                break;
+            }
+            newRackNames.add(rackName.toLowerCase());
 
             if (isNaN(rack.rows) || isNaN(rack.cols) || rack.rows <= 0 || rack.cols <= 0) {
-                toast({ title: 'Invalid Layout', description: `Layout for rack "${rack.name}" must have positive numbers for rows and columns.`, variant: 'destructive'});
+                toast({ title: 'Invalid Layout', description: `Layout for rack "${rackName}" must have positive numbers for rows and columns.`, variant: 'destructive'});
                 error = true;
-                return;
+                break;
             }
             
             const totalShelves = rack.rows * rack.cols;
             
             for(let i = 1; i <= totalShelves; i++) {
-                const shelfId = `${room.name}-${rack.name}-${i}`.replace(/\s+/g, '-');
+                const shelfId = `${roomName}-${rackName}-${i}`.replace(/\s+/g, '-');
                 newShelvesData[shelfId] = {
                     id: shelfId,
-                    roomNo: room.name,
-                    rackNo: rack.name,
+                    roomNo: roomName,
+                    rackNo: rackName,
                     shelfNo: String(i),
                     capacity: Number(rack.shelfCapacity)
                 };
             }
-        });
-    });
+        }
+        if (error) break;
+    }
+
 
     if (error) return;
     
     try {
-        const shelvesMetaRef = ref(db, 'shelvesMetadata');
-        const snapshot = await get(shelvesMetaRef);
-        const existingData = snapshot.val() || {};
         const combinedData = {...existingData, ...newShelvesData };
 
         await set(shelvesMetaRef, combinedData);
