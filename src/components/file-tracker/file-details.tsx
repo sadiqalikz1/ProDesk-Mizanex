@@ -91,48 +91,28 @@ export default function FileDetails() {
         const file = event.target.files[0];
         const reader = new FileReader();
 
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json: any[] = XLSX.utils.sheet_to_json(worksheet);
-
-                if (json.length === 0) {
-                    toast({ title: 'Import Error', description: 'The selected Excel file is empty.', variant: 'destructive' });
-                    return;
+                const data = e.target?.result;
+                if (!data) {
+                     toast({ title: 'Import Error', description: 'Could not read the file.', variant: 'destructive' });
+                     return;
                 }
-
-                const newHistoryItems: LocationHistory[] = json.map((row: any) => {
-                    const notes = `Added Doc: #${row['Document #'] || ''} (Pos: ${row['Doc Position'] || ''}) - ${row['Notes'] || ''}`;
-                    return {
-                        date: row['Date'] ? new Date(row['Date']).toISOString() : new Date().toISOString(),
-                        location: entry.locationHistory.slice(-1)[0]?.location || 'N/A',
-                        status: row['Status'] || entry.status,
-                        updatedBy: row['Updated By'] || 'Import',
-                        notes: notes,
-                        isSigned: String(row['Signed']).toLowerCase() === 'yes',
-                        isSealed: String(row['Sealed']).toLowerCase() === 'yes',
-                    };
-                });
                 
-                const db = getDatabase(app);
-                const entryRef = ref(db, `entries/${entry.id}`);
-                const updatedHistory = [...(entry.locationHistory || []), ...newHistoryItems];
+                // Store data in session storage to pass to the new tab
+                sessionStorage.setItem('importData', JSON.stringify({
+                    fileData: data,
+                    targetFileId: entry.id,
+                }));
                 
-                await update(entryRef, { locationHistory: updatedHistory });
-
-                toast({
-                    title: 'Import Successful',
-                    description: `Successfully imported ${newHistoryItems.length} history records to file ${entry.fileNo}.`,
-                });
+                // Open new tab for verification
+                window.open('/import-verification', '_blank');
 
             } catch (error) {
                 console.error("Import error:", error);
                 toast({
                     title: 'Import Failed',
-                    description: 'There was an error processing the Excel file. Please check the file format and try again.',
+                    description: 'There was an error processing the file.',
                     variant: 'destructive',
                 });
             } finally {
@@ -143,7 +123,7 @@ export default function FileDetails() {
             }
         };
 
-        reader.readAsArrayBuffer(file);
+        reader.readAsBinaryString(file);
     };
 
     if (loading) {
@@ -269,5 +249,3 @@ export default function FileDetails() {
         </>
     )
 }
-
-    
