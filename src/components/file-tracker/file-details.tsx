@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "@/lib/firebase";
+import * as XLSX from 'xlsx';
 import { Entry, LocationHistory } from "./types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
+import { Button } from "../ui/button";
+import { Download } from "lucide-react";
 
 export default function FileDetails() {
     const searchParams = useSearchParams();
@@ -83,6 +86,25 @@ export default function FileDetails() {
 
     const sortedHistory = [...(entry.locationHistory || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+    const handleDownloadExcel = () => {
+        const dataToExport = sortedHistory.map(item => {
+            const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
+            return {
+                Date: new Date(item.date).toLocaleString(),
+                Status: item.status,
+                'Doc Position': docPosition,
+                'Document #': docNumber,
+                'Updated By': item.updatedBy,
+                Notes: remainingNotes,
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "File History");
+
+        XLSX.writeFile(workbook, `${entry.fileNo}_history.xlsx`);
+    }
 
     return (
         <div className="space-y-8">
@@ -104,9 +126,15 @@ export default function FileDetails() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>File History</CardTitle>
-                    <CardDescription>A complete log of all actions taken on this file.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>File History</CardTitle>
+                        <CardDescription>A complete log of all actions taken on this file.</CardDescription>
+                    </div>
+                    <Button onClick={handleDownloadExcel} variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download as Excel
+                    </Button>
                 </CardHeader>
                 <CardContent>
                 <div className="h-full w-full overflow-auto">
