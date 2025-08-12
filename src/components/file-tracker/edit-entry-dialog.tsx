@@ -83,7 +83,8 @@ export function EditEntryDialog({
         const unsubscribe = onValue(dataRef, (snapshot) => {
             if (snapshot.exists()) {
               const data = snapshot.val();
-              setter(data ? Object.values(data) as string[] : []);
+              const values = data ? Object.values(data) as string[] : [];
+              setter(Array.from(new Set(values)));
             }
         });
         return unsubscribe;
@@ -269,7 +270,7 @@ export function EditEntryDialog({
                       <SelectValue placeholder="Select a file type..." />
                       </SelectTrigger>
                       <SelectContent>
-                      {docTypes.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                      {docTypes.map((item, index) => <SelectItem key={`${item}-${index}`} value={item}>{item}</SelectItem>)}
                       </SelectContent>
                   </Select>
                   <Button type="button" variant="outline" size="icon" onClick={() => handleOpenAddItemDialog('fileType')}>
