@@ -89,10 +89,17 @@ export default function FileLog() {
       case 'In Use': return 'destructive';
       case 'Closed':
       case 'Created':
+      case 'Approved':
+      case 'Sealed':
+      case 'Signed':
         return 'outline';
       default: return 'default';
     }
   };
+  
+  const YesNoBadge = ({value}: {value: boolean | undefined}) => (
+    <Badge variant={value ? "default" : "secondary"}>{value ? 'Yes' : 'No'}</Badge>
+  )
 
   const getDocInfo = (notes: string) => {
     if (!notes) {
@@ -140,12 +147,15 @@ export default function FileLog() {
                 <TableHead>File Name</TableHead>
                 <TableHead>File Type</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead className="w-[300px]">Location</TableHead>
-                <TableHead>Doc Position</TableHead>
-                <TableHead>Document #</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Doc Pos</TableHead>
+                <TableHead>Doc #</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Signed</TableHead>
+                <TableHead>Sealed</TableHead>
+                <TableHead>Initialed</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -167,6 +177,9 @@ export default function FileLog() {
                     </TableCell>
                     <TableCell>{item.history.updatedBy}</TableCell>
                     <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
+                    <TableCell><YesNoBadge value={item.history.isSigned} /></TableCell>
+                    <TableCell><YesNoBadge value={item.history.isSealed} /></TableCell>
+                    <TableCell><YesNoBadge value={item.history.isInitialed} /></TableCell>
                     <TableCell>{remainingNotes}</TableCell>
                   </TableRow>
                 )

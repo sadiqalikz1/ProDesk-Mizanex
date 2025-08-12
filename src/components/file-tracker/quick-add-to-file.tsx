@@ -19,6 +19,7 @@ import { Entry, LocationHistory } from './types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
 
 type DuplicateError = {
   file: Entry;
@@ -31,6 +32,9 @@ export default function QuickAddToFile() {
   const [docNumber, setDocNumber] = useState('');
   const [docPosition, setDocPosition] = useState('');
   const [notes, setNotes] = useState('');
+  const [isSigned, setIsSigned] = useState(true);
+  const [isSealed, setIsSealed] = useState(true);
+  const [isInitialed, setIsInitialed] = useState(true);
   const [duplicateError, setDuplicateError] = useState<DuplicateError | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -186,6 +190,9 @@ export default function QuickAddToFile() {
       status: entry.status,
       updatedBy: 'System Quick Add',
       notes: constructedNotes,
+      isSigned,
+      isSealed,
+      isInitialed,
     };
 
     const updatedHistory = [...(entry.locationHistory || []), newHistoryEntry];
@@ -331,6 +338,20 @@ export default function QuickAddToFile() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g., Paid in full"
                 />
+            </div>
+             <div className="flex items-center space-x-6 pt-2">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="quick-sign" checked={isSigned} onCheckedChange={(checked) => setIsSigned(Boolean(checked))} />
+                    <Label htmlFor="quick-sign" className="font-medium">Sign</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="quick-seal" checked={isSealed} onCheckedChange={(checked) => setIsSealed(Boolean(checked))} />
+                    <Label htmlFor="quick-seal" className="font-medium">Seal</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="quick-initial" checked={isInitialed} onCheckedChange={(checked) => setIsInitialed(Boolean(checked))} />
+                    <Label htmlFor="quick-initial" className="font-medium">Initial</Label>
+                </div>
             </div>
             <div>
                 <Button type="submit" className="w-full" disabled={!selectedFile || !!duplicateError}>

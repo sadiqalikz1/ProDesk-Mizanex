@@ -5,6 +5,9 @@ export type LocationHistory = {
   status: string;
   updatedBy: string;
   notes: string;
+  isSigned?: boolean;
+  isSealed?: boolean;
+  isInitialed?: boolean;
 };
 
 export type Entry = {
