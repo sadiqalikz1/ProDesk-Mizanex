@@ -1,3 +1,8 @@
+
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import TaskManager from '@/components/task-manager';
 import NotePad from '@/components/note-pad';
 import QuickView from '@/components/quick-view';
@@ -8,8 +13,26 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+         <Skeleton className="h-full w-full" />
+       </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <div className="relative flex w-full">

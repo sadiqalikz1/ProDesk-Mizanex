@@ -1,4 +1,9 @@
 
+
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import Header from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -12,8 +17,26 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import ExistingStorageLayout from '@/components/file-tracker/existing-storage-layout';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function StorageManagementPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+         <Skeleton className="h-full w-full" />
+       </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <div className="relative flex w-full">
