@@ -22,23 +22,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Entry, LocationHistory } from './types';
-import { Button } from '../ui/button';
-import { Edit, Trash2 } from 'lucide-react';
-import { EditHistoryEntryDialog } from './edit-history-entry-dialog';
-import { DeleteHistoryEntryDialog } from './delete-history-entry-dialog';
 
 type HistoryEntry = {
-  parentFile: Entry;
+  parentFile: Omit<Entry, 'locationHistory' | 'dateCreated'>;
   history: LocationHistory;
-  historyIndex: number;
 };
 
 export default function FileLog() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryEntry | null>(null);
 
   useEffect(() => {
     const db = getDatabase(app);
@@ -47,18 +39,20 @@ export default function FileLog() {
     const unsubscribe = onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
       const allHistory: HistoryEntry[] = [];
-      const allEntries: {[id: string]: Entry} = {};
-      
       if (data) {
-        Object.keys(data).forEach(key => {
-            allEntries[key] = { id: key, ...data[key] };
-        });
-
-        Object.keys(allEntries).forEach((key) => {
-          const entryData = allEntries[key];
+        Object.keys(data).forEach((key) => {
+          const entryData = data[key];
+          // We only need a subset of parent file data for the log
+          const parentFile = {
+            id: key,
+            fileNo: entryData.fileNo,
+            fileType: entryData.fileType,
+            company: entryData.company,
+            status: entryData.status,
+          };
           if (entryData.locationHistory && Array.isArray(entryData.locationHistory)) {
-            entryData.locationHistory.forEach((hist: LocationHistory, index: number) => {
-              allHistory.push({ parentFile: entryData, history: hist, historyIndex: index });
+            entryData.locationHistory.forEach((hist: LocationHistory) => {
+              allHistory.push({ parentFile, history: hist });
             });
           }
         });
@@ -87,16 +81,6 @@ export default function FileLog() {
       );
     });
   }, [searchTerm, history]);
-
-  const handleEdit = (item: HistoryEntry) => {
-    setSelectedHistoryItem(item);
-    setIsEditDialogOpen(true);
-  }
-
-  const handleDelete = (item: HistoryEntry) => {
-    setSelectedHistoryItem(item);
-    setIsDeleteDialogOpen(true);
-  }
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -138,7 +122,6 @@ export default function FileLog() {
   }
 
   return (
-    <>
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -157,7 +140,7 @@ export default function FileLog() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-auto">
+        <div className="h-[70vh] w-full overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
@@ -173,14 +156,13 @@ export default function FileLog() {
                 <TableHead>Signed</TableHead>
                 <TableHead>Sealed</TableHead>
                 <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredHistory.map((item, index) => {
                 const { docPosition, docNumber, remainingNotes } = getDocInfo(item.history.notes);
                 return (
-                  <TableRow key={`${item.parentFile.id}-${item.historyIndex}`}>
+                  <TableRow key={`${item.parentFile.id}-${index}`}>
                     <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
                     <TableCell>{item.parentFile.fileType}</TableCell>
                     <TableCell>{item.parentFile.company}</TableCell>
@@ -197,16 +179,6 @@ export default function FileLog() {
                     <TableCell><YesNoBadge value={item.history.isSigned} /></TableCell>
                     <TableCell><YesNoBadge value={item.history.isSealed} /></TableCell>
                     <TableCell>{remainingNotes}</TableCell>
-                    <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item)}>
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                        </Button>
-                    </TableCell>
                   </TableRow>
                 )
               })}
@@ -215,24 +187,5 @@ export default function FileLog() {
         </div>
       </CardContent>
     </Card>
-    {selectedHistoryItem && (
-        <EditHistoryEntryDialog 
-            isOpen={isEditDialogOpen}
-            setIsOpen={setIsEditDialogOpen}
-            entry={selectedHistoryItem.parentFile}
-            historyEntry={selectedHistoryItem.history}
-            historyIndex={selectedHistoryItem.historyIndex}
-        />
-    )}
-    {selectedHistoryItem && (
-        <DeleteHistoryEntryDialog 
-            isOpen={isDeleteDialogOpen}
-            setIsOpen={setIsDeleteDialogOpen}
-            entry={selectedHistoryItem.parentFile}
-            historyEntry={selectedHistoryItem.history}
-            historyIndex={selectedHistoryItem.historyIndex}
-        />
-    )}
-    </>
   );
 }

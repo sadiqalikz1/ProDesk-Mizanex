@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "@/lib/firebase";
@@ -12,11 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
 import { Button } from "../ui/button";
-import { Download, Upload, Edit, Trash2, Search } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { EditHistoryEntryDialog } from "./edit-history-entry-dialog";
-import { DeleteHistoryEntryDialog } from "./delete-history-entry-dialog";
-import { Input } from "../ui/input";
 
 
 export default function FileDetails() {
@@ -26,10 +23,6 @@ export default function FileDetails() {
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
     const importInputRef = useRef<HTMLInputElement>(null);
-    const [isEditHistoryOpen, setIsEditHistoryOpen] = useState(false);
-    const [isDeleteHistoryOpen, setIsDeleteHistoryOpen] = useState(false);
-    const [selectedHistory, setSelectedHistory] = useState<{item: LocationHistory, index: number} | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
 
 
     useEffect(() => {
@@ -132,41 +125,6 @@ export default function FileDetails() {
 
         reader.readAsBinaryString(file);
     };
-    
-    const handleEditHistory = (item: LocationHistory, index: number) => {
-        const originalIndex = (entry?.locationHistory || []).indexOf(item);
-        setSelectedHistory({ item, index: originalIndex });
-        setIsEditHistoryOpen(true);
-    };
-
-    const handleDeleteHistory = (item: LocationHistory, index: number) => {
-        const originalIndex = (entry?.locationHistory || []).indexOf(item);
-        setSelectedHistory({ item, index: originalIndex });
-        setIsDeleteHistoryOpen(true);
-    }
-    
-    const documentHistory = useMemo(() => {
-        if (!entry?.locationHistory) return [];
-        return [...(entry.locationHistory || [])]
-            .filter(item => item.status !== 'Created')
-            .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [entry]);
-
-    const filteredDocumentHistory = useMemo(() => {
-        if (!searchTerm) return documentHistory;
-
-        const lowercasedTerm = searchTerm.toLowerCase();
-        return documentHistory.filter(item => {
-            const { docNumber, docPosition, remainingNotes } = getDocInfo(item.notes);
-            return (
-                item.status?.toLowerCase().includes(lowercasedTerm) ||
-                docPosition.toLowerCase().includes(lowercasedTerm) ||
-                docNumber.toLowerCase().includes(lowercasedTerm) ||
-                item.updatedBy?.toLowerCase().includes(lowercasedTerm) ||
-                remainingNotes.toLowerCase().includes(lowercasedTerm)
-            );
-        });
-    }, [searchTerm, documentHistory]);
 
     if (loading) {
         return (
@@ -181,8 +139,10 @@ export default function FileDetails() {
         return <Card><CardHeader><CardTitle>File not found</CardTitle></CardHeader></Card>
     }
 
+    const sortedHistory = [...(entry.locationHistory || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     const handleDownloadExcel = () => {
-        const dataToExport = documentHistory.map(item => {
+        const dataToExport = sortedHistory.map(item => {
             const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
             return {
                 Date: new Date(item.date).toLocaleString(),
@@ -198,9 +158,9 @@ export default function FileDetails() {
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Document History");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "File History");
 
-        XLSX.writeFile(workbook, `${entry.fileNo}_document_history.xlsx`);
+        XLSX.writeFile(workbook, `${entry.fileNo}_history.xlsx`);
     }
 
     const YesNoBadge = ({value}: {value: boolean | undefined}) => (
@@ -228,21 +188,12 @@ export default function FileDetails() {
                 </Card>
 
                 <Card>
-                    <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                            <CardTitle>Document History</CardTitle>
-                            <CardDescription>A log of all documents added to this file.</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>File History</CardTitle>
+                            <CardDescription>A complete log of all actions taken on this file.</CardDescription>
                         </div>
-                        <div className="flex items-center gap-2 w-full md:w-auto">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Search history..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
+                        <div className="flex items-center gap-2">
                             <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
                             <Button onClick={handleImportClick} variant="outline" size="sm">
                                 <Upload className="mr-2 h-4 w-4" />
@@ -250,12 +201,12 @@ export default function FileDetails() {
                             </Button>
                             <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                                 <Download className="mr-2 h-4 w-4" />
-                                Excel
+                                Download as Excel
                             </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
-                    <div className="w-full overflow-x-auto">
+                    <div className="h-full w-full overflow-auto">
                         <Table>
                             <TableHeader>
                             <TableRow>
@@ -267,15 +218,13 @@ export default function FileDetails() {
                                 <TableHead>Signed</TableHead>
                                 <TableHead>Sealed</TableHead>
                                 <TableHead>Notes</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {filteredDocumentHistory.map((item, index) => {
+                            {sortedHistory.map((item, index) => {
                                 const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
-                                const originalIndex = (entry.locationHistory || []).indexOf(item);
                                 return (
-                                <TableRow key={`${item.date}-${index}`}>
+                                <TableRow key={index}>
                                     <TableCell>{new Date(item.date).toLocaleString()}</TableCell>
                                     <TableCell>
                                     <Badge variant={getStatusVariant(item.status)}>
@@ -288,43 +237,15 @@ export default function FileDetails() {
                                     <TableCell><YesNoBadge value={item.isSigned} /></TableCell>
                                     <TableCell><YesNoBadge value={item.isSealed} /></TableCell>
                                     <TableCell>{remainingNotes}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEditHistory(item, originalIndex)}>
-                                            <Edit className="h-4 w-4" />
-                                            <span className="sr-only">Edit</span>
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteHistory(item, originalIndex)}>
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Delete</span>
-                                        </Button>
-                                    </TableCell>
                                 </TableRow>
                                 )
                             })}
                             </TableBody>
                         </Table>
-                    </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
-            {entry && selectedHistory && (
-                <EditHistoryEntryDialog 
-                    isOpen={isEditHistoryOpen}
-                    setIsOpen={setIsEditHistoryOpen}
-                    entry={entry}
-                    historyEntry={selectedHistory.item}
-                    historyIndex={selectedHistory.index}
-                />
-            )}
-             {entry && selectedHistory && (
-                <DeleteHistoryEntryDialog 
-                    isOpen={isDeleteHistoryOpen}
-                    setIsOpen={setIsDeleteHistoryOpen}
-                    entry={entry}
-                    historyEntry={selectedHistory.item}
-                    historyIndex={selectedHistory.index}
-                />
-            )}
         </>
     )
 }
