@@ -20,12 +20,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, History, Archive, ArrowDownUp, MoreVertical, Eye } from 'lucide-react';
+import { Edit, Archive, ArrowDownUp, MoreVertical, Eye, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 
@@ -33,6 +34,7 @@ import { AddEntryDialog } from './add-entry-dialog';
 import { EditEntryDialog } from './edit-entry-dialog';
 import { UpdateFileDialog } from './update-file-dialog';
 import { CloseFileDialog } from './close-file-dialog';
+import { DeleteFileDialog } from './delete-file-dialog';
 import { Entry } from './types';
 import Link from 'next/link';
 
@@ -43,6 +45,7 @@ export default function PhysicalFileTracker() {
   const [isEditEntryDialogOpen, setEditEntryDialogOpen] = useState(false);
   const [isUpdateFileDialogOpen, setUpdateFileDialogOpen] = useState(false);
   const [isCloseFileDialogOpen, setCloseFileDialogOpen] = useState(false);
+  const [isDeleteFileDialogOpen, setDeleteFileDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
 
   useEffect(() => {
@@ -95,6 +98,11 @@ export default function PhysicalFileTracker() {
     setSelectedEntry(entry);
     setCloseFileDialogOpen(true);
   };
+  
+  const handleDeleteFile = (entry: Entry) => {
+    setSelectedEntry(entry);
+    setDeleteFileDialogOpen(true);
+  }
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -156,6 +164,8 @@ export default function PhysicalFileTracker() {
             <TableBody>
               {filteredEntries.map((entry) => {
                 const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
+                const hasDocuments = (entry.locationHistory || []).filter(h => h.status !== 'Created').length > 0;
+                
                 return (
                   <TableRow key={entry.id}>
                     <TableCell className="font-medium whitespace-normal break-words">{entry.fileNo}</TableCell>
@@ -192,12 +202,21 @@ export default function PhysicalFileTracker() {
                             <Edit className="mr-2 h-4 w-4" />
                             <span>Edit</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem
+                           <DropdownMenuItem
                             onClick={() => handleCloseFile(entry)}
                             disabled={entry.status === 'Closed'}
                           >
                             <Archive className="mr-2 h-4 w-4" />
                             <span>Close File</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteFile(entry)}
+                            disabled={hasDocuments}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -233,6 +252,13 @@ export default function PhysicalFileTracker() {
         <CloseFileDialog
           isOpen={isCloseFileDialogOpen}
           setIsOpen={setCloseFileDialogOpen}
+          entry={selectedEntry}
+        />
+      )}
+      {selectedEntry && (
+        <DeleteFileDialog
+          isOpen={isDeleteFileDialogOpen}
+          setIsOpen={setDeleteFileDialogOpen}
           entry={selectedEntry}
         />
       )}

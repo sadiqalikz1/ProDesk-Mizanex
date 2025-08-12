@@ -49,7 +49,7 @@ export default function PhysicalFileTrackerPage() {
         <SidebarInset className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1 p-4 sm:p-6 md:p-8">
-            <div className="mx-auto w-11/12 space-y-8">
+            <div className="mx-auto w-full max-w-7xl space-y-8">
               <div className="flex items-center justify-between gap-2">
                 <BackupRestore />
                 <div className="flex items-center gap-2">
