@@ -21,7 +21,13 @@ const getStoredUsers = () => {
         console.error('Failed to parse users from localStorage', e);
     }
     // Default user if none are stored
-    return [{ username: 'sadiq', password: 'Sadiq@@268' }];
+    const defaultUsers = [{ username: 'sadiq', password: 'Sadiq@@268' }];
+    try {
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+    } catch(e) {
+      console.error('Failed to save default users to localStorage', e);
+    }
+    return defaultUsers;
 };
 
 const setStoredUsers = (users: any[]) => {
