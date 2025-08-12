@@ -6,38 +6,45 @@ type User = {
   username: string;
 };
 
+type StoredUser = {
+    username: string;
+    password?: string;
+}
+
 // This is a simplified in-memory "database" for users.
 // In a real app, this would be a call to a secure backend.
-const getStoredUsers = () => {
+const initialUsers: StoredUser[] = [{ username: 'sadiq', password: 'Sadiq@@268' }];
+
+const getUsersFromStorage = (): StoredUser[] => {
     if (typeof window === 'undefined') {
-        return [{ username: 'sadiq', password: 'Sadiq@@268' }];
+        return initialUsers;
     }
     try {
-        const users = localStorage.getItem('users');
-        if (users) {
-            return JSON.parse(users);
+        const stored = localStorage.getItem('users');
+        if (stored) {
+            return JSON.parse(stored);
         }
     } catch (e) {
-        console.error('Failed to parse users from localStorage', e);
+        console.error("Failed to read users from localStorage", e);
     }
-    // Default user if none are stored
-    const defaultUsers = [{ username: 'sadiq', password: 'Sadiq@@268' }];
+    
+    // If nothing in storage, set initial users
     try {
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-    } catch(e) {
-      console.error('Failed to save default users to localStorage', e);
+        localStorage.setItem('users', JSON.stringify(initialUsers));
+    } catch (e) {
+        console.error("Failed to write initial users to localStorage", e);
     }
-    return defaultUsers;
+    
+    return initialUsers;
 };
 
-const setStoredUsers = (users: any[]) => {
+const setUsersInStorage = (users: StoredUser[]) => {
     try {
         localStorage.setItem('users', JSON.stringify(users));
     } catch (e) {
-        console.error('Failed to save users to localStorage', e);
+        console.error("Failed to write users to localStorage", e);
     }
-}
-
+};
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -61,7 +68,7 @@ export function useAuth() {
     setLoading(true);
     return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
-        const users = getStoredUsers();
+        const users = getUsersFromStorage();
         const foundUser = users.find(u => u.username === username && u.password === password);
 
         if (foundUser) {
@@ -89,7 +96,7 @@ export function useAuth() {
             if(!username || !password) {
                 return reject(new Error('Username and password are required.'));
             }
-            const users = getStoredUsers();
+            const users = getUsersFromStorage();
             const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
             if (existingUser) {
@@ -97,7 +104,7 @@ export function useAuth() {
             }
 
             const newUsers = [...users, { username, password }];
-            setStoredUsers(newUsers);
+            setUsersInStorage(newUsers);
             resolve();
         }, 300);
     });
