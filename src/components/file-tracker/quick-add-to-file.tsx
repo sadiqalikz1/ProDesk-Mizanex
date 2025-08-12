@@ -34,7 +34,6 @@ export default function QuickAddToFile() {
   const [notes, setNotes] = useState('');
   const [isSigned, setIsSigned] = useState(true);
   const [isSealed, setIsSealed] = useState(true);
-  const [isInitialed, setIsInitialed] = useState(true);
   const [duplicateError, setDuplicateError] = useState<DuplicateError | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -192,7 +191,6 @@ export default function QuickAddToFile() {
       notes: constructedNotes,
       isSigned,
       isSealed,
-      isInitialed,
     };
 
     const updatedHistory = [...(entry.locationHistory || []), newHistoryEntry];
@@ -347,10 +345,6 @@ export default function QuickAddToFile() {
                 <div className="flex items-center space-x-2">
                     <Checkbox id="quick-seal" checked={isSealed} onCheckedChange={(checked) => setIsSealed(Boolean(checked))} />
                     <Label htmlFor="quick-seal" className="font-medium">Seal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="quick-initial" checked={isInitialed} onCheckedChange={(checked) => setIsInitialed(Boolean(checked))} />
-                    <Label htmlFor="quick-initial" className="font-medium">Initial</Label>
                 </div>
             </div>
             <div>

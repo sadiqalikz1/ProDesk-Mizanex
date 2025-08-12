@@ -108,7 +108,6 @@ export default function FileDetails() {
                 'Updated By': item.updatedBy,
                 Signed: item.isSigned ? 'Yes' : 'No',
                 Sealed: item.isSealed ? 'Yes' : 'No',
-                Initialed: item.isInitialed ? 'Yes' : 'No',
                 Notes: remainingNotes,
             };
         });
@@ -181,7 +180,6 @@ export default function FileDetails() {
                                 <TableHead>Updated By</TableHead>
                                 <TableHead>Signed</TableHead>
                                 <TableHead>Sealed</TableHead>
-                                <TableHead>Initialed</TableHead>
                                 <TableHead>Notes</TableHead>
                             </TableRow>
                             </TableHeader>
@@ -201,7 +199,6 @@ export default function FileDetails() {
                                     <TableCell>{item.updatedBy}</TableCell>
                                     <TableCell><YesNoBadge value={item.isSigned} /></TableCell>
                                     <TableCell><YesNoBadge value={item.isSealed} /></TableCell>
-                                    <TableCell><YesNoBadge value={item.isInitialed} /></TableCell>
                                     <TableCell>{remainingNotes}</TableCell>
                                 </TableRow>
                                 )

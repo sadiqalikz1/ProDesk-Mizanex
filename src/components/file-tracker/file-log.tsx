@@ -155,7 +155,6 @@ export default function FileLog() {
                 <TableHead>Date</TableHead>
                 <TableHead>Signed</TableHead>
                 <TableHead>Sealed</TableHead>
-                <TableHead>Initialed</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -179,7 +178,6 @@ export default function FileLog() {
                     <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
                     <TableCell><YesNoBadge value={item.history.isSigned} /></TableCell>
                     <TableCell><YesNoBadge value={item.history.isSealed} /></TableCell>
-                    <TableCell><YesNoBadge value={item.history.isInitialed} /></TableCell>
                     <TableCell>{remainingNotes}</TableCell>
                   </TableRow>
                 )
