@@ -1,9 +1,9 @@
 
 'use client'
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "@/lib/firebase";
 import * as XLSX from 'xlsx';
 import { Entry, LocationHistory } from "./types";
@@ -12,16 +12,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
 import { Button } from "../ui/button";
-import { Download, Stamp, Pencil, Check } from "lucide-react";
-import { QuickActionDialog } from "./quick-action-dialog";
+import { Download, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function FileDetails() {
     const searchParams = useSearchParams();
     const fileId = searchParams.get('id');
     const [entry, setEntry] = useState<Entry | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
-    const [actionType, setActionType] = useState<'Approve' | 'Seal' | 'Sign' | null>(null);
+    const { toast } = useToast();
+    const importInputRef = useRef<HTMLInputElement>(null);
+
 
     useEffect(() => {
         if (fileId) {
@@ -42,11 +44,6 @@ export default function FileDetails() {
             setLoading(false);
         }
     }, [fileId]);
-
-    const handleQuickAction = (type: 'Approve' | 'Seal' | 'Sign') => {
-        setActionType(type);
-        setIsActionDialogOpen(true);
-    }
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -81,6 +78,73 @@ export default function FileDetails() {
   
       return { docNumber, docPosition, remainingNotes: remainingNotes || 'N/A' };
     }
+    
+    const handleImportClick = () => {
+        importInputRef.current?.click();
+    };
+
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || event.target.files.length === 0 || !entry) {
+            return;
+        }
+
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) {
+                    toast({ title: 'Import Error', description: 'The selected Excel file is empty.', variant: 'destructive' });
+                    return;
+                }
+
+                const newHistoryItems: LocationHistory[] = json.map((row: any) => {
+                    const notes = `Added Doc: #${row['Document #'] || ''} (Pos: ${row['Doc Position'] || ''}) - ${row['Notes'] || ''}`;
+                    return {
+                        date: row['Date'] ? new Date(row['Date']).toISOString() : new Date().toISOString(),
+                        location: entry.locationHistory.slice(-1)[0]?.location || 'N/A',
+                        status: row['Status'] || entry.status,
+                        updatedBy: row['Updated By'] || 'Import',
+                        notes: notes,
+                        isSigned: String(row['Signed']).toLowerCase() === 'yes',
+                        isSealed: String(row['Sealed']).toLowerCase() === 'yes',
+                    };
+                });
+                
+                const db = getDatabase(app);
+                const entryRef = ref(db, `entries/${entry.id}`);
+                const updatedHistory = [...(entry.locationHistory || []), ...newHistoryItems];
+                
+                await update(entryRef, { locationHistory: updatedHistory });
+
+                toast({
+                    title: 'Import Successful',
+                    description: `Successfully imported ${newHistoryItems.length} history records to file ${entry.fileNo}.`,
+                });
+
+            } catch (error) {
+                console.error("Import error:", error);
+                toast({
+                    title: 'Import Failed',
+                    description: 'There was an error processing the Excel file. Please check the file format and try again.',
+                    variant: 'destructive',
+                });
+            } finally {
+                // Reset file input
+                if(importInputRef.current) {
+                    importInputRef.current.value = '';
+                }
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
 
     if (loading) {
         return (
@@ -150,17 +214,10 @@ export default function FileDetails() {
                             <CardDescription>A complete log of all actions taken on this file.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                             <Button onClick={() => handleQuickAction('Approve')} variant="outline" size="sm">
-                                <Check className="mr-2 h-4 w-4" />
-                                Approve
-                            </Button>
-                             <Button onClick={() => handleQuickAction('Seal')} variant="outline" size="sm">
-                                <Stamp className="mr-2 h-4 w-4" />
-                                Seal
-                            </Button>
-                             <Button onClick={() => handleQuickAction('Sign')} variant="outline" size="sm">
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Sign
+                            <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
+                            <Button onClick={handleImportClick} variant="outline" size="sm">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Import
                             </Button>
                             <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                                 <Download className="mr-2 h-4 w-4" />
@@ -209,14 +266,8 @@ export default function FileDetails() {
                     </CardContent>
                 </Card>
             </div>
-             {entry && actionType && (
-                <QuickActionDialog
-                    isOpen={isActionDialogOpen}
-                    setIsOpen={setIsActionDialogOpen}
-                    entry={entry}
-                    actionType={actionType}
-                />
-            )}
         </>
     )
 }
+
+    
