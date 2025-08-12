@@ -250,6 +250,7 @@ export default function QuickAddToFile() {
                         }}
                         onFocus={() => setShowResults(true)}
                         className="pl-10"
+                        autoComplete="off"
                     />
                 </div>
                 {showResults && searchTerm && filteredEntries.length > 0 && (
@@ -306,6 +307,7 @@ export default function QuickAddToFile() {
                 onChange={handleDocNumberChange}
                 placeholder="e.g., INV-123"
                 className={cn(duplicateError && 'border-destructive focus-visible:ring-destructive')}
+                autoComplete="off"
                 />
                 {duplicateError && (
                   <div className="text-xs text-destructive p-2 bg-destructive/10 rounded-md space-y-1">
@@ -325,6 +327,7 @@ export default function QuickAddToFile() {
                 value={docPosition}
                 onChange={(e) => setDocPosition(e.target.value)}
                 placeholder="Auto-generated"
+                autoComplete="off"
                 />
             </div>
             </div>
@@ -335,6 +338,7 @@ export default function QuickAddToFile() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g., Paid in full"
+                autoComplete="off"
                 />
             </div>
              <div className="flex items-center space-x-6 pt-2">
@@ -357,3 +361,5 @@ export default function QuickAddToFile() {
     </Card>
   );
 }
+
+    
