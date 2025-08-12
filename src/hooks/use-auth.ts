@@ -1,51 +1,15 @@
 
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { getDatabase, ref, get, set, child } from "firebase/database";
+import { app } from '@/lib/firebase';
+
 
 type User = {
   username: string;
 };
 
-type StoredUser = {
-    username: string;
-    password?: string;
-}
-
-// This is a simplified in-memory "database" for users.
-// In a real app, this would be a call to a secure backend.
-const initialUsers: StoredUser[] = [{ username: 'sadiq', password: 'Sadiq@@268' }];
-
-const getUsersFromStorage = (): StoredUser[] => {
-    if (typeof window === 'undefined') {
-        return initialUsers;
-    }
-    try {
-        const stored = localStorage.getItem('users');
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (e) {
-        console.error("Failed to read users from localStorage", e);
-    }
-    
-    // If nothing in storage, set initial users
-    try {
-        localStorage.setItem('users', JSON.stringify(initialUsers));
-    } catch (e) {
-        console.error("Failed to write initial users to localStorage", e);
-    }
-    
-    return initialUsers;
-};
-
-const setUsersInStorage = (users: StoredUser[]) => {
-    try {
-        localStorage.setItem('users', JSON.stringify(users));
-    } catch (e) {
-        console.error("Failed to write users to localStorage", e);
-    }
-};
-
+// This hook now uses Firebase Realtime Database for user storage.
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,23 +30,44 @@ export function useAuth() {
 
   const login = useCallback(async (username, password) => {
     setLoading(true);
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        const users = getUsersFromStorage();
-        const foundUser = users.find(u => u.username === username && u.password === password);
+    const db = getDatabase(app);
+    const dbRef = ref(db);
 
-        if (foundUser) {
-          const userToStore = { username: foundUser.username };
-          sessionStorage.setItem('user', JSON.stringify(userToStore));
-          setUser(userToStore);
-          setLoading(false);
-          resolve();
-        } else {
-          setLoading(false);
-          reject(new Error('Invalid username or password'));
+    try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        
+        // If no users exist at all, create the default user.
+        const allUsersSnapshot = await get(child(dbRef, 'users'));
+        if (!allUsersSnapshot.exists()) {
+             await set(ref(db, 'users/sadiq'), {
+                username: 'sadiq',
+                password: 'Sadiq@@268',
+            });
+            // Re-check for the user after seeding
+            const seededSnapshot = await get(child(dbRef, `users/${username}`));
+             if (seededSnapshot.exists() && seededSnapshot.val().password === password) {
+                const userToStore = { username: seededSnapshot.val().username };
+                sessionStorage.setItem('user', JSON.stringify(userToStore));
+                setUser(userToStore);
+                resolve();
+                return;
+            }
         }
-      }, 500);
-    });
+        
+        if (snapshot.exists() && snapshot.val().password === password) {
+            const userToStore = { username: snapshot.val().username };
+            sessionStorage.setItem('user', JSON.stringify(userToStore));
+            setUser(userToStore);
+            return Promise.resolve();
+        } else {
+            return Promise.reject(new Error('Invalid username or password'));
+        }
+    } catch (error) {
+        console.error("Firebase login error:", error);
+        return Promise.reject(new Error('An error occurred during login.'));
+    } finally {
+        setLoading(false);
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -91,23 +76,26 @@ export function useAuth() {
   }, []);
   
   const createUser = useCallback(async (username, password) => {
-    return new Promise<void>((resolve, reject) => {
-        setTimeout(() => {
-            if(!username || !password) {
-                return reject(new Error('Username and password are required.'));
-            }
-            const users = getUsersFromStorage();
-            const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if(!username || !password) {
+        return Promise.reject(new Error('Username and password are required.'));
+    }
 
-            if (existingUser) {
-                return reject(new Error('Username already exists.'));
-            }
+    const db = getDatabase(app);
+    const userRef = ref(db, 'users/' + username.toLowerCase());
 
-            const newUsers = [...users, { username, password }];
-            setUsersInStorage(newUsers);
-            resolve();
-        }, 300);
-    });
+    try {
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+            return Promise.reject(new Error('Username already exists.'));
+        }
+        
+        await set(userRef, { username, password });
+        return Promise.resolve();
+
+    } catch (error) {
+        console.error("Firebase createUser error:", error);
+        return Promise.reject(new Error('An error occurred while creating the user.'));
+    }
   }, []);
 
   return { user, login, logout, loading, createUser };
