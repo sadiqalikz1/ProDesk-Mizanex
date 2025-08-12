@@ -52,7 +52,7 @@ export default function LoginForm() {
             <Input
               id="username"
               type="text"
-              placeholder="sadiq"
+              placeholder="Enter your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -63,7 +63,7 @@ export default function LoginForm() {
             <Input
               id="password"
               type="password"
-              placeholder="Sadiq@@268"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
