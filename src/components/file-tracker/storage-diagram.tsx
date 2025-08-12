@@ -10,15 +10,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Shelf, Rack } from './types';
+import { Entry, Shelf, Rack } from './types';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Building, Library } from 'lucide-react';
+import { Building, Library, Folder, File as FileIcon, CircleAlert } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type OrganizedData = {
   [room: string]: Rack[];
@@ -26,12 +29,22 @@ type OrganizedData = {
 
 export default function StorageDiagram() {
   const [data, setData] = useState<OrganizedData>({});
+  const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const db = getDatabase(app);
     const racksRef = ref(db, 'racksMetadata');
     const shelvesRef = ref(db, 'shelvesMetadata');
+    const entriesRef = ref(db, 'entries');
+
+    const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
+        const entriesData: Entry[] = [];
+        snapshot.forEach((childSnapshot) => {
+            entriesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+        });
+        setEntries(entriesData);
+    });
 
     const unsubscribeRacks = onValue(racksRef, (racksSnapshot) => {
       const racks: Rack[] = [];
@@ -50,7 +63,8 @@ export default function StorageDiagram() {
         racks.forEach((rack) => {
           rack.shelves = shelves.filter(
             (s) => s.roomNo === rack.roomNo && s.rackNo === rack.rackNo
-          );
+          ).sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo));
+
           if (!organizedData[rack.roomNo]) {
             organizedData[rack.roomNo] = [];
           }
@@ -71,8 +85,76 @@ export default function StorageDiagram() {
       return () => unsubscribeShelves();
     });
 
-    return () => unsubscribeRacks();
+    return () => {
+        unsubscribeRacks();
+        unsubscribeEntries();
+    };
   }, []);
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'In Storage': return 'default';
+      case 'Checked Out': return 'secondary';
+      case 'In Use': return 'destructive';
+      case 'Closed': return 'outline';
+      default: return 'default';
+    }
+  };
+
+  const ShelfContent = ({ shelf }: { shelf: Shelf }) => {
+    const filesOnShelf = useMemo(() => entries.filter(e => e.roomNo === shelf.roomNo && e.rackNo === shelf.rackNo && e.shelfNo === shelf.shelfNo), [shelf]);
+
+    const filesByPosition: {[key: string]: Entry} = {};
+    filesOnShelf.forEach(f => {
+      if(f.boxNo) filesByPosition[f.boxNo] = f;
+    })
+
+    return (
+      <div className='p-2 bg-muted/20 rounded-lg'>
+        <h4 className='font-bold mb-2 text-center'>Shelf {shelf.shelfNo} (Capacity: {shelf.capacity})</h4>
+        <div className="grid grid-cols-5 gap-2">
+          {Array.from({ length: shelf.capacity }, (_, i) => {
+            const pos = i + 1;
+            const file = filesByPosition[pos];
+            return (
+              <TooltipProvider key={pos}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "flex flex-col items-center justify-center h-20 rounded-md border-2 text-xs p-1 text-center",
+                      file ? "border-primary bg-primary/10" : "border-dashed"
+                    )}>
+                      {file ? (
+                        <>
+                          <FileIcon className='h-4 w-4 mb-1' />
+                          <span className='font-bold truncate w-full'>{file.fileNo}</span>
+                          <Badge variant={getStatusVariant(file.status)} className='mt-1'>{file.status}</Badge>
+                        </>
+                      ) : (
+                        <span className='text-muted-foreground'>Empty</span>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className='font-bold'>Position: {pos}</p>
+                    {file ? (
+                      <div className='text-sm mt-1'>
+                        <p><span className='font-semibold'>File Name:</span> {file.fileNo}</p>
+                        <p><span className='font-semibold'>Type:</span> {file.fileType}</p>
+                        <p><span className='font-semibold'>Company:</span> {file.company}</p>
+                        <p><span className='font-semibold'>Owner:</span> {file.owner}</p>
+                        <p><span className='font-semibold'>Status:</span> {file.status}</p>
+                      </div>
+                    ) : <p>This slot is empty.</p>}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return <Skeleton className="h-[400px] w-full" />;
@@ -98,7 +180,7 @@ export default function StorageDiagram() {
       <CardHeader>
         <CardTitle>Storage Diagram</CardTitle>
         <CardDescription>
-          A diagrammatic overview of your physical storage layout.
+          A diagrammatic overview of your physical storage layout. Hover over a file to see details.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -112,31 +194,29 @@ export default function StorageDiagram() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pt-4 border-t">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 p-4 bg-muted/20 rounded-lg">
+                  <div className="space-y-8 p-4 bg-muted/20 rounded-lg">
                       {data[room].map((rack) => (
-                      <Card key={rack.id} className="flex flex-col bg-background">
-                          <CardHeader className="flex flex-row items-center justify-between p-4 bg-muted/50">
-                          <div className="flex items-center gap-3">
-                              <Library className="h-5 w-5 text-primary" />
-                              <CardTitle className="text-lg">{rack.rackNo}</CardTitle>
-                          </div>
-                           <div className="text-sm text-muted-foreground">
-                                {rack.rows}x{rack.cols} Shelves
+                        <Card key={rack.id} className="flex flex-col bg-background">
+                            <CardHeader className="flex flex-row items-center justify-between p-4 bg-muted/50">
+                            <div className="flex items-center gap-3">
+                                <Library className="h-5 w-5 text-primary" />
+                                <CardTitle className="text-lg">{rack.rackNo}</CardTitle>
                             </div>
-                          </CardHeader>
-                          <CardContent className="p-4 flex-1">
-                            <div 
-                                className="border-2 border-muted-foreground p-2 rounded-lg grid gap-2"
-                                style={{ gridTemplateColumns: `repeat(${rack.cols}, minmax(0, 1fr))` }}
-                                >
-                                {Array.from({length: rack.rows * rack.cols}).map((_, i) => (
-                                    <div key={i} className="flex-1 flex items-center justify-center p-2 h-16 bg-muted/40 border-y-4 border-muted-foreground rounded-md text-center text-xs">
-                                        Shelf {i + 1}
-                                    </div>
-                                ))}
-                            </div>
-                          </CardContent>
-                      </Card>
+                            <div className="text-sm text-muted-foreground">
+                                  {rack.rows}x{rack.cols} Shelves
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-4 flex-1">
+                              <div 
+                                  className="grid gap-4"
+                                  style={{ gridTemplateColumns: `repeat(${rack.cols}, minmax(0, 1fr))` }}
+                                  >
+                                  {rack.shelves.map((shelf) => (
+                                    <ShelfContent key={shelf.id} shelf={shelf} />
+                                  ))}
+                              </div>
+                            </CardContent>
+                        </Card>
                       ))}
                   </div>
               </AccordionContent>
