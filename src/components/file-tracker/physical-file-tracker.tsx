@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, History, Archive, ArrowDownUp, MoreVertical } from 'lucide-react';
+import { Edit, History, Archive, ArrowDownUp, MoreVertical, Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ import { EditEntryDialog } from './edit-entry-dialog';
 import { UpdateFileDialog } from './update-file-dialog';
 import { CloseFileDialog } from './close-file-dialog';
 import { Entry } from './types';
+import Link from 'next/link';
 
 export default function PhysicalFileTracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -177,6 +178,12 @@ export default function PhysicalFileTracker() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem asChild>
+                             <Link href={`/file-page?id=${entry.id}`}>
+                               <Eye className="mr-2 h-4 w-4" />
+                               <span>View Details</span>
+                             </Link>
+                           </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleUpdate(entry)}>
                               <ArrowDownUp className="mr-2 h-4 w-4" />
                               <span>Update/Move</span>
@@ -192,10 +199,6 @@ export default function PhysicalFileTracker() {
                             <Archive className="mr-2 h-4 w-4" />
                             <span>Close File</span>
                           </DropdownMenuItem>
-                           <DropdownMenuItem disabled>
-                             <History className="mr-2 h-4 w-4" />
-                             <span>View History</span>
-                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

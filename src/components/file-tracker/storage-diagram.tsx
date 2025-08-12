@@ -22,6 +22,7 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import Link from 'next/link';
 
 type OrganizedData = {
   [room: string]: Rack[];
@@ -116,24 +117,28 @@ export default function StorageDiagram() {
           {Array.from({ length: shelf.capacity }, (_, i) => {
             const pos = i + 1;
             const file = filesByPosition[pos];
+            const fileCell = (
+              <div className={cn(
+                "flex flex-col items-center justify-center h-20 rounded-md border-2 text-xs p-1 text-center",
+                file ? "border-primary bg-primary/10" : "border-dashed"
+              )}>
+                {file ? (
+                  <>
+                    <FileIcon className='h-4 w-4 mb-1' />
+                    <span className='font-bold truncate w-full'>{file.fileNo}</span>
+                    <Badge variant={getStatusVariant(file.status)} className='mt-1'>{file.status}</Badge>
+                  </>
+                ) : (
+                  <span className='text-muted-foreground'>Empty</span>
+                )}
+              </div>
+            );
+            
             return (
               <TooltipProvider key={pos}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={cn(
-                      "flex flex-col items-center justify-center h-20 rounded-md border-2 text-xs p-1 text-center",
-                      file ? "border-primary bg-primary/10" : "border-dashed"
-                    )}>
-                      {file ? (
-                        <>
-                          <FileIcon className='h-4 w-4 mb-1' />
-                          <span className='font-bold truncate w-full'>{file.fileNo}</span>
-                          <Badge variant={getStatusVariant(file.status)} className='mt-1'>{file.status}</Badge>
-                        </>
-                      ) : (
-                        <span className='text-muted-foreground'>Empty</span>
-                      )}
-                    </div>
+                    {file ? <Link href={`/file-page?id=${file.id}`}>{fileCell}</Link> : fileCell}
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className='font-bold'>Position: {pos}</p>
