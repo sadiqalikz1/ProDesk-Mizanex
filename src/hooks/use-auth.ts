@@ -6,8 +6,32 @@ type User = {
   username: string;
 };
 
-const FAKE_USER: User = { username: 'sadiq' };
-const FAKE_PASSWORD = 'Sadiq@@268';
+// This is a simplified in-memory "database" for users.
+// In a real app, this would be a call to a secure backend.
+const getStoredUsers = () => {
+    if (typeof window === 'undefined') {
+        return [{ username: 'sadiq', password: 'Sadiq@@268' }];
+    }
+    try {
+        const users = localStorage.getItem('users');
+        if (users) {
+            return JSON.parse(users);
+        }
+    } catch (e) {
+        console.error('Failed to parse users from localStorage', e);
+    }
+    // Default user if none are stored
+    return [{ username: 'sadiq', password: 'Sadiq@@268' }];
+};
+
+const setStoredUsers = (users: any[]) => {
+    try {
+        localStorage.setItem('users', JSON.stringify(users));
+    } catch (e) {
+        console.error('Failed to save users to localStorage', e);
+    }
+}
+
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -31,8 +55,11 @@ export function useAuth() {
     setLoading(true);
     return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
-        if (username === FAKE_USER.username && password === FAKE_PASSWORD) {
-          const userToStore = { username };
+        const users = getStoredUsers();
+        const foundUser = users.find(u => u.username === username && u.password === password);
+
+        if (foundUser) {
+          const userToStore = { username: foundUser.username };
           sessionStorage.setItem('user', JSON.stringify(userToStore));
           setUser(userToStore);
           setLoading(false);
@@ -49,6 +76,26 @@ export function useAuth() {
     sessionStorage.removeItem('user');
     setUser(null);
   }, []);
+  
+  const createUser = useCallback(async (username, password) => {
+    return new Promise<void>((resolve, reject) => {
+        setTimeout(() => {
+            if(!username || !password) {
+                return reject(new Error('Username and password are required.'));
+            }
+            const users = getStoredUsers();
+            const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
-  return { user, login, logout, loading };
+            if (existingUser) {
+                return reject(new Error('Username already exists.'));
+            }
+
+            const newUsers = [...users, { username, password }];
+            setStoredUsers(newUsers);
+            resolve();
+        }, 300);
+    });
+  }, []);
+
+  return { user, login, logout, loading, createUser };
 }

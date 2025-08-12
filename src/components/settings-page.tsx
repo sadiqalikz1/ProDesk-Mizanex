@@ -33,12 +33,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Paintbrush, RotateCcw, Trash2, DatabaseZap } from 'lucide-react';
+import { Paintbrush, RotateCcw, Trash2, UserPlus } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { Input } from './ui/input';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState('system');
   const [dataToClear, setDataToClear] = useState('');
   const { toast } = useToast();
+  const { createUser } = useAuth();
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [createUserError, setCreateUserError] = useState('');
+
 
   const handleSave = () => {
     toast({
@@ -54,6 +63,22 @@ export default function SettingsPage() {
       description: 'Your settings have been reset to their default values.',
     });
   };
+  
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateUserError('');
+    try {
+      await createUser(newUsername, newPassword);
+      toast({
+        title: 'User Created',
+        description: `Successfully created user "${newUsername}".`,
+      });
+      setNewUsername('');
+      setNewPassword('');
+    } catch (err: any) {
+      setCreateUserError(err.message);
+    }
+  }
 
   const handleClearData = async () => {
     if (!dataToClear) {
@@ -104,11 +129,58 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
-            Manage your application preferences.
+            Manage your application preferences and user accounts.
           </p>
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New User</CardTitle>
+          <CardDescription>
+            Add a new user to the application.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="new-username">Username</Label>
+                  <Input
+                    id="new-username"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Enter a username"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter a password"
+                    required
+                  />
+                </div>
+            </div>
+             {createUserError && (
+              <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error Creating User</AlertTitle>
+                  <AlertDescription>{createUserError}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full sm:w-auto">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Create User
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
