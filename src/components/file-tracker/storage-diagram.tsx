@@ -17,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Building, Library, Folder, File as FileIcon, CircleAlert } from 'lucide-react';
+import { Building, Library, File as FileIcon } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
@@ -39,30 +39,16 @@ export default function StorageDiagram() {
     const shelvesRef = ref(db, 'shelvesMetadata');
     const entriesRef = ref(db, 'entries');
 
-    const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
-        const entriesData: Entry[] = [];
-        snapshot.forEach((childSnapshot) => {
-            entriesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
-        });
-        setEntries(entriesData);
-    });
+    let racksData: Rack[] = [];
+    let shelvesData: Shelf[] = [];
+    let entriesData: Entry[] = [];
 
-    const unsubscribeRacks = onValue(racksRef, (racksSnapshot) => {
-      const racks: Rack[] = [];
-      racksSnapshot.forEach((childSnapshot) => {
-        racks.push({ shelves: [], ...childSnapshot.val() });
-      });
-
-      const unsubscribeShelves = onValue(shelvesRef, (shelvesSnapshot) => {
-        const shelves: Shelf[] = [];
-        shelvesSnapshot.forEach((childSnapshot) => {
-          shelves.push({ id: childSnapshot.key!, ...childSnapshot.val() });
-        });
-
+    const handleDataLoaded = () => {
+      if (racksData.length > 0 && shelvesData.length > 0 && entriesData.length > 0) {
         const organizedData: OrganizedData = {};
 
-        racks.forEach((rack) => {
-          rack.shelves = shelves.filter(
+        racksData.forEach((rack) => {
+          rack.shelves = shelvesData.filter(
             (s) => s.roomNo === rack.roomNo && s.rackNo === rack.rackNo
           ).sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo));
 
@@ -71,7 +57,7 @@ export default function StorageDiagram() {
           }
           organizedData[rack.roomNo].push(rack);
         });
-
+        
         const sortedRooms = Object.keys(organizedData).sort();
         const finalData: OrganizedData = {};
         sortedRooms.forEach((room) => {
@@ -81,14 +67,39 @@ export default function StorageDiagram() {
         });
 
         setData(finalData);
+        setEntries(entriesData);
         setLoading(false);
+      }
+    };
+    
+    const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
+        entriesData = [];
+        snapshot.forEach((childSnapshot) => {
+            entriesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+        });
+        handleDataLoaded();
+    });
+    
+    const unsubscribeRacks = onValue(racksRef, (racksSnapshot) => {
+      racksData = [];
+      racksSnapshot.forEach((childSnapshot) => {
+        racksData.push({ shelves: [], ...childSnapshot.val() });
       });
-      return () => unsubscribeShelves();
+      handleDataLoaded();
+    });
+
+    const unsubscribeShelves = onValue(shelvesRef, (shelvesSnapshot) => {
+      shelvesData = [];
+      shelvesSnapshot.forEach((childSnapshot) => {
+        shelvesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
+      });
+      handleDataLoaded();
     });
 
     return () => {
         unsubscribeRacks();
         unsubscribeEntries();
+        unsubscribeShelves();
     };
   }, []);
 
@@ -103,7 +114,7 @@ export default function StorageDiagram() {
   };
 
   const ShelfContent = ({ shelf }: { shelf: Shelf }) => {
-    const filesOnShelf = useMemo(() => entries.filter(e => e.roomNo === shelf.roomNo && e.rackNo === shelf.rackNo && e.shelfNo === shelf.shelfNo), [shelf]);
+    const filesOnShelf = useMemo(() => entries.filter(e => e.roomNo === shelf.roomNo && e.rackNo === shelf.rackNo && e.shelfNo === shelf.shelfNo), [shelf, entries]);
 
     const filesByPosition: {[key: string]: Entry} = {};
     filesOnShelf.forEach(f => {
@@ -117,6 +128,7 @@ export default function StorageDiagram() {
           {Array.from({ length: shelf.capacity }, (_, i) => {
             const pos = i + 1;
             const file = filesByPosition[pos];
+            
             const fileCell = (
               <div className={cn(
                 "flex flex-col items-center justify-center h-20 rounded-md border-2 text-xs p-1 text-center",
@@ -135,10 +147,10 @@ export default function StorageDiagram() {
             );
             
             return (
-              <TooltipProvider key={pos}>
+              <TooltipProvider key={pos} delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    {file ? <Link href={`/file-page?id=${file.id}`}>{fileCell}</Link> : fileCell}
+                    {file ? <Link href={`/file-page?id=${file.id}`}>{fileCell}</Link> : <div>{fileCell}</div>}
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className='font-bold'>Position: {pos}</p>
