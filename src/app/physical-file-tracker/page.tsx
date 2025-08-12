@@ -14,7 +14,7 @@ import PhysicalFileTracker from '@/components/file-tracker/physical-file-tracker
 import FileLog from '@/components/file-tracker/file-log';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Eye, Warehouse } from 'lucide-react';
+import { Warehouse } from 'lucide-react';
 
 export default function PhysicalFileTrackerPage() {
   return (
@@ -32,12 +32,6 @@ export default function PhysicalFileTrackerPage() {
                   <Link href="/storage-management">
                     <Warehouse className="mr-2 h-4 w-4" />
                     Manage Storage
-                  </Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/virtual-file-view">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Virtual View
                   </Link>
                 </Button>
               </div>
