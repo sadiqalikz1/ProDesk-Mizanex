@@ -11,6 +11,7 @@ type User = {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const FAKE_USER: User = { username: 'sadiq' };
 const FAKE_PASSWORD = 'Sadiq@@268';
 =======
@@ -58,6 +59,9 @@ const setUsersInStorage = (users: StoredUser[]) => {
 =======
 // This hook now uses Firebase Realtime Database for user storage.
 >>>>>>> 17672a1 (USER DATA STORE IN FIRE BASE DATABASE MOVE CURENT USER DATA)
+=======
+// This hook now uses Firebase Realtime Database for user storage.
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +83,7 @@ export function useAuth() {
   const login = useCallback(async (username, password) => {
     setLoading(true);
 <<<<<<< HEAD
+<<<<<<< HEAD
     return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
 <<<<<<< HEAD
@@ -99,6 +104,8 @@ export function useAuth() {
           setLoading(false);
           reject(new Error('Invalid username or password'));
 =======
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
     const db = getDatabase(app);
     const dbRef = ref(db);
 
@@ -121,7 +128,10 @@ export function useAuth() {
                 resolve();
                 return;
             }
+<<<<<<< HEAD
 >>>>>>> 17672a1 (USER DATA STORE IN FIRE BASE DATABASE MOVE CURENT USER DATA)
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
         }
         
         if (snapshot.exists() && snapshot.val().password === password) {
@@ -145,6 +155,7 @@ export function useAuth() {
     setUser(null);
   }, []);
 <<<<<<< HEAD
+<<<<<<< HEAD
 
   return { user, login, logout, loading };
 =======
@@ -154,6 +165,14 @@ export function useAuth() {
         return Promise.reject(new Error('Username and password are required.'));
     }
 
+=======
+  
+  const createUser = useCallback(async (username, password) => {
+    if(!username || !password) {
+        return Promise.reject(new Error('Username and password are required.'));
+    }
+
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
     const db = getDatabase(app);
     const userRef = ref(db, 'users/' + username.toLowerCase());
 
@@ -173,5 +192,8 @@ export function useAuth() {
   }, []);
 
   return { user, login, logout, loading, createUser };
+<<<<<<< HEAD
 >>>>>>> 6967e15 (but new created users cant login fix this)
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
 }

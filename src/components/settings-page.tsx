@@ -33,20 +33,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Paintbrush, RotateCcw, Trash2, DatabaseZap } from 'lucide-react';
+import { Paintbrush, RotateCcw, Trash2, UserPlus } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { Input } from './ui/input';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [theme, setTheme] = useState('system');
   const [dataToClear, setDataToClear] = useState('');
   const { toast } = useToast();
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
   const { user, createUser } = useAuth();
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [createUserError, setCreateUserError] = useState('');
 
+<<<<<<< HEAD
 >>>>>>> 29ea115 (Make the following changes:)
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
 
   const handleSave = () => {
     toast({
@@ -62,6 +72,22 @@ export default function SettingsPage() {
       description: 'Your settings have been reset to their default values.',
     });
   };
+  
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateUserError('');
+    try {
+      await createUser(newUsername, newPassword);
+      toast({
+        title: 'User Created',
+        description: `Successfully created user "${newUsername}".`,
+      });
+      setNewUsername('');
+      setNewPassword('');
+    } catch (err: any) {
+      setCreateUserError(err.message);
+    }
+  }
 
   const handleClearData = async () => {
     if (!dataToClear) {
@@ -112,13 +138,16 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
-            Manage your application preferences.
+            Manage your application preferences and user accounts.
           </p>
         </div>
       </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
       {user?.username === 'sadiq' && (
         <Card>
           <CardHeader>
@@ -168,7 +197,10 @@ export default function SettingsPage() {
         </Card>
       )}
       
+<<<<<<< HEAD
 >>>>>>> 29ea115 (Make the following changes:)
+=======
+>>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
@@ -285,4 +317,12 @@ export default function SettingsPage() {
       </Card>
     </div>
   );
+}
+
+export default function SettingsPage() {
+    const { user, loading } = useAuth();
+    if (loading || !user) {
+        return null;
+    }
+    return <SettingsContent />;
 }
