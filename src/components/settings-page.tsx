@@ -39,11 +39,11 @@ import { Input } from './ui/input';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertCircle } from 'lucide-react';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [theme, setTheme] = useState('system');
   const [dataToClear, setDataToClear] = useState('');
   const { toast } = useToast();
-  const { createUser } = useAuth();
+  const { user, createUser } = useAuth();
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [createUserError, setCreateUserError] = useState('');
@@ -134,52 +134,54 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Create New User</CardTitle>
-          <CardDescription>
-            Add a new user to the application.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="new-username">Username</Label>
-                  <Input
-                    id="new-username"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    placeholder="Enter a username"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Password</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter a password"
-                    required
-                  />
-                </div>
-            </div>
-             {createUserError && (
-              <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error Creating User</AlertTitle>
-                  <AlertDescription>{createUserError}</AlertDescription>
-              </Alert>
-            )}
-            <Button type="submit" className="w-full sm:w-auto">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Create User
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {user?.username === 'sadiq' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New User</CardTitle>
+            <CardDescription>
+              Add a new user to the application.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-username">Username</Label>
+                    <Input
+                      id="new-username"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      placeholder="Enter a username"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter a password"
+                      required
+                    />
+                  </div>
+              </div>
+              {createUserError && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error Creating User</AlertTitle>
+                    <AlertDescription>{createUserError}</AlertDescription>
+                </Alert>
+              )}
+              <Button type="submit" className="w-full sm:w-auto">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Create User
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
       
       <Card>
         <CardHeader>
@@ -297,4 +299,12 @@ export default function SettingsPage() {
       </Card>
     </div>
   );
+}
+
+export default function SettingsPage() {
+    const { user, loading } = useAuth();
+    if (loading || !user) {
+        return null;
+    }
+    return <SettingsContent />;
 }

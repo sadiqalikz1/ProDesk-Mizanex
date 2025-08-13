@@ -56,6 +56,7 @@ export default function LoginForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
             />
           </div>
           <div className="space-y-2">
@@ -67,6 +68,7 @@ export default function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
           </div>
           {error && (
@@ -83,7 +85,7 @@ export default function LoginForm() {
         </form>
       </CardContent>
        <CardFooter className="text-center text-xs text-muted-foreground">
-        <p>Use username 'sadiq' and password 'Sadiq@@268' to log in.</p>
+        <p>Login with a user created in settings, or the default: user 'sadiq' and password 'Sadiq@@268'.</p>
       </CardFooter>
     </Card>
   );
