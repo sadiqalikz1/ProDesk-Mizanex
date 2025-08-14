@@ -43,20 +43,10 @@ function SettingsContent() {
   const [theme, setTheme] = useState('system');
   const [dataToClear, setDataToClear] = useState('');
   const { toast } = useToast();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
   const { user, createUser } = useAuth();
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [createUserError, setCreateUserError] = useState('');
-
-<<<<<<< HEAD
->>>>>>> 29ea115 (Make the following changes:)
-=======
->>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
 
   const handleSave = () => {
     toast({
@@ -143,11 +133,6 @@ function SettingsContent() {
         </div>
       </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
       {user?.username === 'sadiq' && (
         <Card>
           <CardHeader>
@@ -197,10 +182,6 @@ function SettingsContent() {
         </Card>
       )}
       
-<<<<<<< HEAD
->>>>>>> 29ea115 (Make the following changes:)
-=======
->>>>>>> fec24d5ab29fd1a78e81f689e13cc9e1128f9c4f
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>

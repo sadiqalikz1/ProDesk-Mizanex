@@ -44,8 +44,9 @@ export function useAuth() {
         throw new Error('Invalid username or password');
       }
     } catch (error: any) {
-        console.error("Firebase login error:", error);
-        throw error; // Re-throw the error to be caught by the form
+        // We throw the error here so the login form can catch it and display it to the user.
+        // This will catch both the "Invalid username or password" error and any database errors.
+        throw error;
     } finally {
         setLoading(false);
     }
@@ -59,6 +60,10 @@ export function useAuth() {
   const createUser = useCallback(async (username, password) => {
     if(!username || !password) {
         throw new Error('Username and password are required.');
+    }
+    
+    if (user?.username !== 'sadiq') {
+        throw new Error('Only the admin user can create new users.');
     }
 
     const db = getDatabase(app);
@@ -76,7 +81,7 @@ export function useAuth() {
         console.error("Firebase createUser error:", error);
         throw error;
     }
-  }, []);
+  }, [user]);
 
   return { user, login, logout, loading, createUser };
 }
