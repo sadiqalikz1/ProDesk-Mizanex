@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -96,7 +97,7 @@
   }
 
   .animated-gradient {
-    background: linear-gradient(-45deg, #4f46e5, #7c3aed, #22d3ee, #3b82f6);
+    background: linear-gradient(-45deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--secondary)), hsl(var(--primary)));
     background-size: 400% 400%;
     animation: gradient-move 15s ease infinite;
   }

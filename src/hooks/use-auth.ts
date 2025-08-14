@@ -1,9 +1,7 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { getDatabase, ref, get, set, child } from "firebase/database";
+import { getDatabase, ref, get, set } from "firebase/database";
 import { app } from '@/lib/firebase';
-
 
 type User = {
   username: string;
@@ -44,7 +42,6 @@ export function useAuth() {
         throw new Error('Invalid username or password');
       }
     } catch (error: any) {
-        // We throw the error here so the login form can catch it and display it to the user.
         // This will catch both the "Invalid username or password" error and any database errors.
         throw error;
     } finally {

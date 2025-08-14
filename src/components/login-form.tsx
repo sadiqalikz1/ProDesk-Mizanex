@@ -8,9 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn } from 'lucide-react';
+import { LogIn, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertCircle } from 'lucide-react';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -38,14 +37,14 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
       <Card className="border-none bg-transparent shadow-none">
-        <CardHeader className="text-left">
-          <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</CardTitle>
-          <CardDescription className="text-gray-600">Enter your credentials to access your dashboard.</CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Sign in to ProDesk</CardTitle>
+          <CardDescription className="text-muted-foreground">Enter your credentials to access your dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-gray-700">Username</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -54,7 +53,7 @@ export default function LoginForm() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
-                className="bg-white/80 focus:bg-white"
+                className="bg-background/80 focus:bg-background"
               />
             </div>
             <div className="space-y-2">
@@ -67,7 +66,7 @@ export default function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="bg-white/80 focus:bg-white"
+                className="bg-background/80 focus:bg-background"
               />
             </div>
             {error && (
@@ -77,7 +76,7 @@ export default function LoginForm() {
                   <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <Button type="submit" className="w-full text-base py-6 bg-primary hover:bg-primary/90">
+            <Button type="submit" className="w-full text-base py-6">
               <LogIn className="mr-2 h-5 w-5" />
               Sign In
             </Button>

@@ -32,7 +32,7 @@ const features = [
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-indigo-900 p-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
       <div className="absolute inset-0 animated-gradient z-0" />
       <div className="absolute -top-1/4 -right-1/4 h-1/2 w-1/2 rounded-full bg-blue-500/20 blur-3xl" />
       <div className="absolute -bottom-1/4 -left-1/4 h-1/2 w-1/2 rounded-full bg-purple-500/20 blur-3xl" />
@@ -40,7 +40,7 @@ export default function LoginPage() {
       <main className="z-10 w-full max-w-4xl lg:max-w-5xl">
         <div className="flex rounded-2xl bg-white/30 shadow-2xl backdrop-blur-lg overflow-hidden">
           {/* Left Side */}
-          <div className="hidden w-1/2 flex-col justify-between bg-blue-900/50 p-8 text-white lg:flex">
+          <div className="hidden w-1/2 flex-col justify-between bg-primary/80 p-8 text-white lg:flex">
             <div>
                  <div className="flex items-center gap-2">
                     <BriefcaseBusiness className="h-8 w-8 text-white" />
@@ -48,7 +48,7 @@ export default function LoginPage() {
                     ProDesk
                     </h1>
                 </div>
-                <p className="mt-4 text-blue-200">
+                <p className="mt-4 text-primary-foreground/80">
                     A streamlined office productivity dashboard to manage common tasks and documents.
                 </p>
                 <div className="mt-10 space-y-8">
@@ -59,17 +59,17 @@ export default function LoginPage() {
                     </div>
                     <div>
                         <h3 className="font-semibold">{feature.name}</h3>
-                        <p className="mt-1 text-sm text-blue-200">{feature.description}</p>
+                        <p className="mt-1 text-sm text-primary-foreground/80">{feature.description}</p>
                     </div>
                     </div>
                 ))}
                 </div>
             </div>
-            <p className="text-xs text-blue-300">© {new Date().getFullYear()} ProDesk Inc.</p>
+            <p className="text-xs text-primary-foreground/60">© {new Date().getFullYear()} ProDesk Inc.</p>
           </div>
 
           {/* Right Side - Form */}
-          <div className="w-full lg:w-1/2 p-6 sm:p-8 flex items-center justify-center bg-gray-50/70">
+          <div className="w-full lg:w-1/2 p-6 sm:p-8 flex items-center justify-center">
             <LoginForm />
           </div>
         </div>
