@@ -49,7 +49,7 @@ export function useAuth() {
                 const userToStore = { username: seededSnapshot.val().username };
                 sessionStorage.setItem('user', JSON.stringify(userToStore));
                 setUser(userToStore);
-                resolve();
+                setLoading(false);
                 return;
             }
         }
@@ -58,13 +58,12 @@ export function useAuth() {
             const userToStore = { username: snapshot.val().username };
             sessionStorage.setItem('user', JSON.stringify(userToStore));
             setUser(userToStore);
-            return Promise.resolve();
         } else {
-            return Promise.reject(new Error('Invalid username or password'));
+            throw new Error('Invalid username or password');
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Firebase login error:", error);
-        return Promise.reject(new Error('An error occurred during login.'));
+        throw new Error(error.message || 'An error occurred during login.');
     } finally {
         setLoading(false);
     }
