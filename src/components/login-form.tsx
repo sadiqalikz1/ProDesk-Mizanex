@@ -84,9 +84,6 @@ export default function LoginForm() {
           </Button>
         </form>
       </CardContent>
-       <CardFooter className="text-center text-xs text-muted-foreground">
-        <p>Login with a user created in settings, or the default: user 'sadiq' and password 'Sadiq@@268'.</p>
-      </CardFooter>
     </Card>
   );
 }

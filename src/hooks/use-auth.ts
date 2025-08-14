@@ -31,39 +31,29 @@ export function useAuth() {
   const login = useCallback(async (username, password) => {
     setLoading(true);
     const db = getDatabase(app);
-    const dbRef = ref(db);
+    const usersRef = ref(db, 'users');
+    const userRef = child(usersRef, username.toLowerCase());
 
     try {
-        const snapshot = await get(child(dbRef, `users/${username}`));
-        
-        // If no users exist at all, create the default user.
-        const allUsersSnapshot = await get(child(dbRef, 'users'));
-        if (!allUsersSnapshot.exists()) {
-             await set(ref(db, 'users/sadiq'), {
-                username: 'sadiq',
-                password: 'Sadiq@@268',
-            });
-            // Re-check for the user after seeding
-            const seededSnapshot = await get(child(dbRef, `users/${username}`));
-             if (seededSnapshot.exists() && seededSnapshot.val().password === password) {
-                const userToStore = { username: seededSnapshot.val().username };
-                sessionStorage.setItem('user', JSON.stringify(userToStore));
-                setUser(userToStore);
-                setLoading(false);
-                return;
-            }
+      const snapshot = await get(userRef);
+
+      if (snapshot.exists() && snapshot.val().password === password) {
+        const userToStore = { username: snapshot.val().username };
+        sessionStorage.setItem('user', JSON.stringify(userToStore));
+        setUser(userToStore);
+      } else {
+        // If login fails, check if any user exists at all.
+        // If not, seed the default user. This is a one-time operation.
+        const allUsersSnap = await get(usersRef);
+        if (!allUsersSnap.exists()) {
+            const sadiqRef = child(usersRef, 'sadiq');
+            await set(sadiqRef, { username: 'sadiq', password: '123'});
         }
-        
-        if (snapshot.exists() && snapshot.val().password === password) {
-            const userToStore = { username: snapshot.val().username };
-            sessionStorage.setItem('user', JSON.stringify(userToStore));
-            setUser(userToStore);
-        } else {
-            throw new Error('Invalid username or password');
-        }
+        throw new Error('Invalid username or password');
+      }
     } catch (error: any) {
         console.error("Firebase login error:", error);
-        throw new Error(error.message || 'An error occurred during login.');
+        throw error; // Re-throw the error to be caught by the form
     } finally {
         setLoading(false);
     }
@@ -76,7 +66,7 @@ export function useAuth() {
   
   const createUser = useCallback(async (username, password) => {
     if(!username || !password) {
-        return Promise.reject(new Error('Username and password are required.'));
+        throw new Error('Username and password are required.');
     }
 
     const db = getDatabase(app);
@@ -85,15 +75,14 @@ export function useAuth() {
     try {
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
-            return Promise.reject(new Error('Username already exists.'));
+            throw new Error('Username already exists.');
         }
         
         await set(userRef, { username, password });
-        return Promise.resolve();
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Firebase createUser error:", error);
-        return Promise.reject(new Error('An error occurred while creating the user.'));
+        throw error;
     }
   }, []);
 
