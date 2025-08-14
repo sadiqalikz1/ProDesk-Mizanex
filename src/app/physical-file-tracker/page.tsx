@@ -21,6 +21,45 @@ import Link from 'next/link';
 import { LayoutGrid, Warehouse } from 'lucide-react';
 import BackupRestore from '@/components/file-tracker/backup-restore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FileTrackerProvider } from '@/context/file-tracker-context';
+
+function PhysicalFileTrackerPageContent() {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <BackupRestore />
+        <div className="flex items-center gap-2">
+          <Button asChild>
+            <Link href="/storage-view">
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Diagram View
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/storage-management">
+              <Warehouse className="mr-2 h-4 w-4" />
+              Manage Storage
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <CreateFile />
+      <QuickAddToFile />
+      <Tabs defaultValue="file-list">
+        <TabsList>
+          <TabsTrigger value="file-list">File List</TabsTrigger>
+          <TabsTrigger value="history-log">History Log</TabsTrigger>
+        </TabsList>
+        <TabsContent value="file-list">
+          <PhysicalFileTracker />
+        </TabsContent>
+        <TabsContent value="history-log">
+          <FileLog />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
 
 export default function PhysicalFileTrackerPage() {
   const { user, loading } = useAuth();
@@ -41,50 +80,22 @@ export default function PhysicalFileTrackerPage() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="relative flex w-full">
-        <Sidebar>
-          <AppSidebar />
-        </Sidebar>
-        <SidebarInset className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1 p-4 sm:p-6 md:p-8">
-            <div className="mx-auto w-11/12 space-y-8">
-              <div className="flex items-center justify-between gap-2">
-                <BackupRestore />
-                <div className="flex items-center gap-2">
-                  <Button asChild>
-                    <Link href="/storage-view">
-                      <LayoutGrid className="mr-2 h-4 w-4" />
-                      Diagram View
-                    </Link>
-                  </Button>
-                  <Button asChild>
-                    <Link href="/storage-management">
-                      <Warehouse className="mr-2 h-4 w-4" />
-                      Manage Storage
-                    </Link>
-                  </Button>
-                </div>
+    <FileTrackerProvider>
+      <SidebarProvider>
+        <div className="relative flex w-full">
+          <Sidebar>
+            <AppSidebar />
+          </Sidebar>
+          <SidebarInset className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 p-4 sm:p-6 md:p-8">
+              <div className="mx-auto w-11/12 space-y-8">
+                <PhysicalFileTrackerPageContent />
               </div>
-              <CreateFile />
-              <QuickAddToFile />
-              <Tabs defaultValue="file-list">
-                <TabsList>
-                  <TabsTrigger value="file-list">File List</TabsTrigger>
-                  <TabsTrigger value="history-log">History Log</TabsTrigger>
-                </TabsList>
-                <TabsContent value="file-list">
-                  <PhysicalFileTracker />
-                </TabsContent>
-                <TabsContent value="history-log">
-                  <FileLog />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </FileTrackerProvider>
   );
 }

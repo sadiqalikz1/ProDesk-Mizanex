@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { useState, useMemo } from 'react';
+import { getDatabase, ref, update } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -22,48 +22,44 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Entry, LocationHistory } from './types';
+import { Button } from '../ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { EditHistoryDialog } from './edit-history-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { useFileTracker } from '@/context/file-tracker-context';
 
 type HistoryEntry = {
-  parentFile: Omit<Entry, 'locationHistory' | 'dateCreated'>;
+  parentFile: Entry;
   history: LocationHistory;
+  originalIndex: number;
 };
 
 export default function FileLog() {
+  const { entries } = useFileTracker();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const db = getDatabase(app);
-    const entriesRef = ref(db, 'entries');
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryEntry | null>(null);
 
-    const unsubscribe = onValue(entriesRef, (snapshot) => {
-      const data = snapshot.val();
-      const allHistory: HistoryEntry[] = [];
-      if (data) {
-        Object.keys(data).forEach((key) => {
-          const entryData = data[key];
-          // We only need a subset of parent file data for the log
-          const parentFile = {
-            id: key,
-            fileNo: entryData.fileNo,
-            fileType: entryData.fileType,
-            company: entryData.company,
-            status: entryData.status,
-          };
-          if (entryData.locationHistory && Array.isArray(entryData.locationHistory)) {
-            entryData.locationHistory.forEach((hist: LocationHistory) => {
-              allHistory.push({ parentFile, history: hist });
-            });
-          }
-        });
-      }
-      // Sort by date descending
-      allHistory.sort((a, b) => new Date(b.history.date).getTime() - new Date(a.history.date).getTime());
-      setHistory(allHistory);
+  useMemo(() => {
+    const allHistory: HistoryEntry[] = [];
+    entries.forEach((entry) => {
+        if (entry.locationHistory && Array.isArray(entry.locationHistory)) {
+          entry.locationHistory.forEach((hist, index) => {
+            allHistory.push({ parentFile: entry, history: hist, originalIndex: index });
+          });
+        }
     });
-
-    return () => unsubscribe();
-  }, []);
+    
+    allHistory.sort((a, b) => new Date(b.history.date).getTime() - new Date(a.history.date).getTime());
+    setHistory(allHistory);
+  }, [entries]);
+  
 
   const filteredHistory = useMemo(() => {
     if (!searchTerm) return history;
@@ -81,6 +77,36 @@ export default function FileLog() {
       );
     });
   }, [searchTerm, history]);
+
+  const handleEditHistory = (item: HistoryEntry) => {
+    setSelectedHistoryItem(item);
+    setEditDialogOpen(true);
+  };
+  
+  const handleDeleteHistory = (item: HistoryEntry) => {
+    setSelectedHistoryItem(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteHistory = async () => {
+    if (!selectedHistoryItem) return;
+
+    const { parentFile, originalIndex } = selectedHistoryItem;
+    const db = getDatabase(app);
+    const updatedHistory = [...(parentFile.locationHistory || [])];
+    updatedHistory.splice(originalIndex, 1);
+
+    const entryRef = ref(db, `entries/${parentFile.id}`);
+    await update(entryRef, { locationHistory: updatedHistory });
+
+    toast({
+        title: 'History Entry Deleted',
+        description: 'The history entry has been removed.',
+        variant: 'destructive',
+    });
+    setDeleteDialogOpen(false);
+    setSelectedHistoryItem(null);
+  };
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -122,6 +148,7 @@ export default function FileLog() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -156,6 +183,7 @@ export default function FileLog() {
                 <TableHead>Signed</TableHead>
                 <TableHead>Sealed</TableHead>
                 <TableHead>Notes</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,6 +207,25 @@ export default function FileLog() {
                     <TableCell><YesNoBadge value={item.history.isSigned} /></TableCell>
                     <TableCell><YesNoBadge value={item.history.isSealed} /></TableCell>
                     <TableCell>{remainingNotes}</TableCell>
+                    <TableCell className="text-right">
+                        {item.history.notes?.startsWith('Added Doc:') && item.parentFile.status !== 'Closed' && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleEditHistory(item)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDeleteHistory(item)} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </TableCell>
                   </TableRow>
                 )
               })}
@@ -187,5 +234,31 @@ export default function FileLog() {
         </div>
       </CardContent>
     </Card>
+
+    {selectedHistoryItem && (
+        <EditHistoryDialog 
+            isOpen={isEditDialogOpen}
+            setIsOpen={setEditDialogOpen}
+            entry={selectedHistoryItem.parentFile}
+            historyItem={selectedHistoryItem.history}
+            historyIndex={selectedHistoryItem.originalIndex}
+        />
+    )}
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete this history entry. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteHistory}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    </>
   );
 }

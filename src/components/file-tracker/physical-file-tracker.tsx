@@ -1,7 +1,7 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { useState, useMemo } from 'react';
+import { getDatabase, ref, remove } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -20,12 +20,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, History, Archive, ArrowDownUp, MoreVertical, Eye } from 'lucide-react';
+import { Edit, Archive, ArrowDownUp, MoreVertical, Eye, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 
@@ -35,34 +36,21 @@ import { UpdateFileDialog } from './update-file-dialog';
 import { CloseFileDialog } from './close-file-dialog';
 import { Entry } from './types';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { useFileTracker } from '@/context/file-tracker-context';
+import { Skeleton } from '../ui/skeleton';
 
 export default function PhysicalFileTracker() {
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const { entries, loading } = useFileTracker();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddEntryDialogOpen, setAddEntryDialogOpen] = useState(false);
   const [isEditEntryDialogOpen, setEditEntryDialogOpen] = useState(false);
   const [isUpdateFileDialogOpen, setUpdateFileDialogOpen] = useState(false);
   const [isCloseFileDialogOpen, setCloseFileDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-
-  useEffect(() => {
-    const db = getDatabase(app);
-    const entriesRef = ref(db, 'entries');
-    const unsubscribe = onValue(entriesRef, (snapshot) => {
-      const data = snapshot.val();
-      const loadedEntries: Entry[] = data
-        ? Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-            dateCreated: new Date(data[key].dateCreated),
-            locationHistory: data[key].locationHistory || [],
-          }))
-        : [];
-      setEntries(loadedEntries);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { toast } = useToast();
 
   const filteredEntries = useMemo(() => {
     if (!searchTerm) return entries;
@@ -95,6 +83,26 @@ export default function PhysicalFileTracker() {
     setSelectedEntry(entry);
     setCloseFileDialogOpen(true);
   };
+  
+  const handleDeleteFile = (entry: Entry) => {
+    setSelectedEntry(entry);
+    setDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteFile = async () => {
+    if (!selectedEntry) return;
+
+    const db = getDatabase(app);
+    const entryRef = ref(db, `entries/${selectedEntry.id}`);
+    await remove(entryRef);
+    
+    toast({
+        title: 'File Deleted',
+        description: `Successfully deleted file "${selectedEntry.fileNo}".`,
+        variant: 'destructive',
+    });
+    setDeleteDialogOpen(false);
+  }
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -154,57 +162,71 @@ export default function PhysicalFileTracker() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEntries.map((entry) => {
-                const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
-                return (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-medium whitespace-normal break-words">{entry.fileNo}</TableCell>
-                    <TableCell>{entry.fileType}</TableCell>
-                    <TableCell>{entry.company}</TableCell>
-                    <TableCell>{location}</TableCell>
-                    <TableCell>{entry.owner}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(entry.status)}>
-                        {entry.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{getLatestMoveDate(entry)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">More actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuItem asChild>
-                             <Link href={`/file-page?id=${entry.id}`}>
-                               <Eye className="mr-2 h-4 w-4" />
-                               <span>View Details</span>
-                             </Link>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => handleUpdate(entry)}>
-                              <ArrowDownUp className="mr-2 h-4 w-4" />
-                              <span>Update/Move</span>
+              {loading ? (
+                 Array.from({ length: 10 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell colSpan={8}><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                filteredEntries.map((entry) => {
+                  const location = `Room: ${entry.roomNo || 'N/A'}, Rack: ${entry.rackNo || 'N/A'}, Shelf: ${entry.shelfNo || 'N/A'}, Box: ${entry.boxNo || 'N/A'}`;
+                  const hasHistory = entry.locationHistory && entry.locationHistory.filter(h => h.notes?.startsWith("Added Doc:")).length > 0;
+                  return (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-medium whitespace-normal break-words">{entry.fileNo}</TableCell>
+                      <TableCell>{entry.fileType}</TableCell>
+                      <TableCell>{entry.company}</TableCell>
+                      <TableCell>{location}</TableCell>
+                      <TableCell>{entry.owner}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(entry.status)}>
+                          {entry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getLatestMoveDate(entry)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">More actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/file-page?id=${entry.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>View Details</span>
+                              </Link>
                             </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            <span>Edit</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleCloseFile(entry)}
-                            disabled={entry.status === 'Closed'}
-                          >
-                            <Archive className="mr-2 h-4 w-4" />
-                            <span>Close File</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+                            <DropdownMenuItem onClick={() => handleUpdate(entry)}>
+                                <ArrowDownUp className="mr-2 h-4 w-4" />
+                                <span>Update/Move</span>
+                              </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCloseFile(entry)}
+                              disabled={entry.status === 'Closed'}
+                            >
+                              <Archive className="mr-2 h-4 w-4" />
+                              <span>Close File</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDeleteFile(entry)} disabled={hasHistory} className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete File</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
           </Table>
         </div>
@@ -235,6 +257,22 @@ export default function PhysicalFileTracker() {
           setIsOpen={setCloseFileDialogOpen}
           entry={selectedEntry}
         />
+      )}
+      {selectedEntry && (
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the file "{selectedEntry.fileNo}". This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteFile}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

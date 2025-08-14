@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { getDatabase, ref, onValue, update } from 'firebase/database';
+import { getDatabase, ref, update } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Card,
@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
+import { useFileTracker } from '@/context/file-tracker-context';
 
 type DuplicateError = {
   file: Entry;
@@ -27,9 +28,12 @@ type DuplicateError = {
 };
 
 export default function QuickAddToFile() {
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const { entries, loading } = useFileTracker();
+  const [activeEntries, setActiveEntries] = useState<Entry[]>([]);
   const [selectedFile, setSelectedFile] = useState<Entry | null>(null);
   const [docNumber, setDocNumber] = useState('');
+  const [prefix, setPrefix] = useState('');
+  const [suffix, setSuffix] = useState('');
   const [docPosition, setDocPosition] = useState('');
   const [notes, setNotes] = useState('');
   const [isSigned, setIsSigned] = useState(true);
@@ -41,25 +45,10 @@ export default function QuickAddToFile() {
   const { toast } = useToast();
   const docNumberInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-
-
+  
   useEffect(() => {
-    const db = getDatabase(app);
-    const entriesRef = ref(db, 'entries');
-
-    const unsubscribe = onValue(entriesRef, (snapshot) => {
-      const data = snapshot.val();
-      const loadedEntries: Entry[] = data
-        ? Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }))
-        : [];
-      setEntries(loadedEntries.filter(e => e.status !== 'Closed'));
-    });
-
-    return () => unsubscribe();
-  }, []);
+    setActiveEntries(entries.filter(e => e.status !== 'Closed'));
+  }, [entries]);
   
   useEffect(() => {
     if (selectedFile) {
@@ -103,6 +92,14 @@ export default function QuickAddToFile() {
       setShowResults(false);
       setDuplicateError(null);
   }
+  
+  const getFullDocNumber = (num: string) => {
+    const parts = [];
+    if (prefix) parts.push(prefix);
+    if (num) parts.push(num);
+    if (suffix) parts.push(suffix);
+    return parts.join('');
+  }
 
   const handleDocNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDocNumber(e.target.value);
@@ -126,15 +123,16 @@ export default function QuickAddToFile() {
     }
 
     const entry = selectedFile;
+    const fullDocNumber = getFullDocNumber(docNumber);
 
-    if (docNumber) {
+    if (fullDocNumber) {
         // Only check for duplicates within the same file type.
         const filesWithSameType = entries.filter(e => e.fileType === entry.fileType);
         let duplicateInfo: DuplicateError | null = null;
 
         for (const file of filesWithSameType) {
             const duplicateHistoryEntry = (file.locationHistory || []).find(h => 
-                h.notes?.startsWith('Added Doc:') && h.notes.includes(`#${docNumber} `)
+                h.notes?.startsWith('Added Doc:') && h.notes.includes(`#${fullDocNumber} `)
             );
             if (duplicateHistoryEntry) {
                 duplicateInfo = { file: file, history: duplicateHistoryEntry };
@@ -146,7 +144,7 @@ export default function QuickAddToFile() {
             setDuplicateError(duplicateInfo);
             toast({
                 title: `Duplicate Document Number`,
-                description: `Doc #${docNumber} already exists in file: ${duplicateInfo.file.fileNo}`,
+                description: `Doc #${fullDocNumber} already exists in file: ${duplicateInfo.file.fileNo}`,
                 variant: 'destructive',
             })
             return;
@@ -170,11 +168,11 @@ export default function QuickAddToFile() {
     const entryRef = ref(getDatabase(app), `entries/${selectedFile.id}`);
     
     let constructedNotes = 'Added Doc: ';
-    if (docNumber) constructedNotes += `#${docNumber} `;
+    if (fullDocNumber) constructedNotes += `#${fullDocNumber} `;
     if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;
     if (notes) constructedNotes += `- ${notes}`;
 
-    if (!docNumber && !notes && !docPosition) {
+    if (!fullDocNumber && !notes && !docPosition) {
       toast({
         title: 'Missing Information',
         description: 'Please provide a document number, position, or notes.',
@@ -201,9 +199,7 @@ export default function QuickAddToFile() {
       description: `Successfully added a new entry to the history of file ${entry.fileNo}.`,
     });
     
-    const updatedSelectedFile = { ...selectedFile, locationHistory: updatedHistory };
-    setSelectedFile(updatedSelectedFile);
-    
+    // As requested, do not clear prefix and suffix
     setDocNumber('');
     setNotes('');
     setDuplicateError(null);
@@ -218,7 +214,7 @@ export default function QuickAddToFile() {
     return { pos, remaining: remaining || 'N/A' };
   }
 
-  const filteredEntries = entries.filter(entry => {
+  const filteredEntries = activeEntries.filter(entry => {
       const fullLabel = `${entry.fileNo} - ${entry.fileType} - ${entry.company}`;
       return fullLabel.toLowerCase().includes(searchTerm.toLowerCase());
   }).slice(0, 10); // Limit results to 10 for performance
@@ -251,6 +247,7 @@ export default function QuickAddToFile() {
                         onFocus={() => setShowResults(true)}
                         className="pl-10"
                         autoComplete="off"
+                        disabled={loading}
                     />
                 </div>
                 {showResults && searchTerm && filteredEntries.length > 0 && (
@@ -297,51 +294,53 @@ export default function QuickAddToFile() {
                 </div>
               </Card>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="quick-doc-number">Doc Number</Label>
-                <Input
-                id="quick-doc-number"
-                ref={docNumberInputRef}
-                value={docNumber}
-                onChange={handleDocNumberChange}
-                placeholder="e.g., INV-123"
-                className={cn(duplicateError && 'border-destructive focus-visible:ring-destructive')}
-                autoComplete="off"
-                />
-                {duplicateError && (
-                  <div className="text-xs text-destructive p-2 bg-destructive/10 rounded-md space-y-1">
-                      <p className="font-semibold">Doc #{docNumber} already exists in a file of type "{duplicateError.file.fileType}".</p>
-                      <p><span className="font-semibold">File:</span> {duplicateError.file.fileNo} ({duplicateError.file.company})</p>
-                      <p><span className="font-semibold">Location:</span> {duplicateError.history.location}</p>
-                      <p><span className="font-semibold">Position:</span> {getDocInfoFromNotes(duplicateError.history.notes).pos}</p>
-                      <p><span className="font-semibold">Date Added:</span> {new Date(duplicateError.history.date).toLocaleDateString()}</p>
-                      <p><span className="font-semibold">Notes:</span> {getDocInfoFromNotes(duplicateError.history.notes).remaining}</p>
-                  </div>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                  <Label htmlFor="quick-doc-prefix">Prefix</Label>
+                  <Input
+                    id="quick-doc-prefix"
+                    value={prefix}
+                    onChange={(e) => setPrefix(e.target.value)}
+                    placeholder="e.g., QFC"
+                    autoComplete="off"
+                  />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="quick-doc-number">Doc Number</Label>
+                  <Input
+                  id="quick-doc-number"
+                  ref={docNumberInputRef}
+                  value={docNumber}
+                  onChange={handleDocNumberChange}
+                  placeholder="e.g., 12345"
+                  className={cn(duplicateError && 'border-destructive focus-visible:ring-destructive')}
+                  autoComplete="off"
+                  />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="quick-doc-suffix">Suffix</Label>
+                  <Input
+                    id="quick-doc-suffix"
+                    value={suffix}
+                    onChange={(e) => setSuffix(e.target.value)}
+                    placeholder="e.g., A"
+                    autoComplete="off"
+                  />
+              </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="quick-doc-position">Document Position</Label>
-                <Input
-                id="quick-doc-position"
-                value={docPosition}
-                onChange={(e) => setDocPosition(e.target.value)}
-                placeholder="Auto-generated"
-                autoComplete="off"
-                />
-            </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="quick-notes">Description/Notes</Label>
-                <Input
-                id="quick-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g., Paid in full"
-                autoComplete="off"
-                />
-            </div>
-             <div className="flex items-center space-x-6 pt-2">
+
+            {duplicateError && (
+              <div className="text-xs text-destructive p-2 bg-destructive/10 rounded-md space-y-1">
+                  <p className="font-semibold">Doc #{getFullDocNumber(docNumber)} already exists in a file of type "{duplicateError.file.fileType}".</p>
+                  <p><span className="font-semibold">File:</span> {duplicateError.file.fileNo} ({duplicateError.file.company})</p>
+                  <p><span className="font-semibold">Location:</span> {duplicateError.history.location}</p>
+                  <p><span className="font-semibold">Position:</span> {getDocInfoFromNotes(duplicateError.history.notes).pos}</p>
+                  <p><span className="font-semibold">Date Added:</span> {new Date(duplicateError.history.date).toLocaleDateString()}</p>
+                  <p><span className="font-semibold">Notes:</span> {getDocInfoFromNotes(duplicateError.history.notes).remaining}</p>
+              </div>
+            )}
+            
+            <div className="flex items-center space-x-6 pt-2">
                 <div className="flex items-center space-x-2">
                     <Checkbox id="quick-sign" checked={isSigned} onCheckedChange={(checked) => setIsSigned(Boolean(checked))} />
                     <Label htmlFor="quick-sign" className="font-medium">Sign</Label>
@@ -351,6 +350,30 @@ export default function QuickAddToFile() {
                     <Label htmlFor="quick-seal" className="font-medium">Seal</Label>
                 </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                  <Label htmlFor="quick-doc-position">Document Position</Label>
+                  <Input
+                  id="quick-doc-position"
+                  value={docPosition}
+                  onChange={(e) => setDocPosition(e.target.value)}
+                  placeholder="Auto-generated"
+                  autoComplete="off"
+                  />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="quick-notes">Description/Notes</Label>
+                  <Input
+                  id="quick-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g., Paid in full"
+                  autoComplete="off"
+                  />
+              </div>
+            </div>
+            
             <div>
                 <Button type="submit" className="w-full" disabled={!selectedFile || !!duplicateError}>
                     Add to History
@@ -361,5 +384,3 @@ export default function QuickAddToFile() {
     </Card>
   );
 }
-
-    

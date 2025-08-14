@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { getDatabase, ref, update, get, set, onValue } from 'firebase/database';
+import { getDatabase, ref, update, onValue } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import {
   Dialog,
@@ -22,11 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Entry, LocationHistory, Shelf } from './types';
+import { Entry, Shelf } from './types';
 import { AddSimpleItemDialog } from './add-simple-item-dialog';
 import { PlusCircle, Search } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
+import { useFileTracker } from '@/context/file-tracker-context';
 
 
 type LocationData = {
@@ -47,13 +48,8 @@ export function EditEntryDialog({
   entry: Entry;
 }) {
   const [editedEntry, setEditedEntry] = useState<Entry>(entry);
-  const [companies, setCompanies] = useState<string[]>([]);
-  const [docTypes, setDocTypes] = useState<string[]>([]);
+  const { entries, companies, docTypes, shelves, locationData, setCompanies, setDocTypes } = useFileTracker();
   const { toast } = useToast();
-
-  const [allEntries, setAllEntries] = useState<Entry[]>([]);
-  const [locationData, setLocationData] = useState<LocationData>({});
-  const [shelves, setShelves] = useState<Shelf[]>([]);
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [addItemDialogType, setAddItemDialogType] = useState<ItemType | null>(
@@ -75,58 +71,6 @@ export function EditEntryDialog({
   useEffect(() => {
     setEditedEntry(entry);
     setCompanySearch(entry.company || '');
-    if (isOpen) {
-      const db = getDatabase(app);
-
-      const fetchSimpleData = (path: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
-        const dataRef = ref(db, path);
-        const unsubscribe = onValue(dataRef, (snapshot) => {
-            if (snapshot.exists()) {
-              const data = snapshot.val();
-              const values = data ? Object.values(data) as string[] : [];
-              setter(Array.from(new Set(values)));
-            }
-        });
-        return unsubscribe;
-      }
-      const unsubCompanies = fetchSimpleData('companies', setCompanies);
-      const unsubDocTypes = fetchSimpleData('docTypes', setDocTypes);
-
-      const entriesRef = ref(db, 'entries');
-       const unsubEntries = onValue(entriesRef, (snapshot) => {
-          const entries: Entry[] = [];
-          snapshot.forEach((childSnapshot) => {
-            entries.push({ id: childSnapshot.key!, ...childSnapshot.val() });
-          });
-          setAllEntries(entries);
-      });
-      
-      const shelvesRef = ref(db, 'shelvesMetadata');
-      const unsubShelves = onValue(shelvesRef, (shelfSnapshot) => {
-        const shelvesData: Shelf[] = [];
-        const groupedData: LocationData = {};
-        shelfSnapshot.forEach((childSnapshot) => {
-          const shelf: Shelf = { id: childSnapshot.key!, ...childSnapshot.val() };
-          shelvesData.push(shelf);
-          
-          const { roomNo, rackNo } = shelf;
-          if (roomNo && rackNo) {
-            if (!groupedData[roomNo]) groupedData[roomNo] = {};
-            if (!groupedData[roomNo][rackNo]) groupedData[roomNo][rackNo] = [];
-            groupedData[roomNo][rackNo].push(shelf);
-          }
-        });
-        setShelves(shelvesData);
-        setLocationData(groupedData);
-      });
-
-      return () => {
-        unsubCompanies();
-        unsubDocTypes();
-        unsubEntries();
-        unsubShelves();
-      }
-    }
   }, [entry, isOpen]);
 
   useEffect(() => {
@@ -232,11 +176,11 @@ export function EditEntryDialog({
   const selectedShelfInfo = shelves.find(s => s.roomNo === editedEntry.roomNo && s.rackNo === editedEntry.rackNo && s.shelfNo === editedEntry.shelfNo);
   const occupiedPositions = useMemo(() => {
     if (!selectedShelfInfo) return [];
-    return allEntries
+    return entries
       .filter(e => e.id !== editedEntry.id && e.roomNo === selectedShelfInfo.roomNo && e.rackNo === selectedShelfInfo.rackNo && e.shelfNo === selectedShelfInfo.shelfNo && e.boxNo)
       .map(f => parseInt(f.boxNo, 10))
       .filter(p => !isNaN(p));
-  }, [editedEntry.roomNo, editedEntry.rackNo, editedEntry.shelfNo, editedEntry.id, allEntries, selectedShelfInfo]);
+  }, [editedEntry.roomNo, editedEntry.rackNo, editedEntry.shelfNo, editedEntry.id, entries, selectedShelfInfo]);
 
 
   return (

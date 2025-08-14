@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { getDatabase, ref, onValue, update } from "firebase/database";
+import { getDatabase, ref, onValue, update, remove } from "firebase/database";
 import { app } from "@/lib/firebase";
 import * as XLSX from 'xlsx';
 import { Entry, LocationHistory } from "./types";
@@ -12,8 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
 import { Button } from "../ui/button";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { EditHistoryDialog } from "./edit-history-dialog";
 
 
 export default function FileDetails() {
@@ -23,6 +26,10 @@ export default function FileDetails() {
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
     const importInputRef = useRef<HTMLInputElement>(null);
+
+    const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState<{item: LocationHistory, index: number} | null>(null);
 
 
     useEffect(() => {
@@ -99,13 +106,11 @@ export default function FileDetails() {
                      return;
                 }
                 
-                // Store data in session storage to pass to the new tab
                 sessionStorage.setItem('importData', JSON.stringify({
                     fileData: data,
                     targetFileId: entry.id,
                 }));
                 
-                // Open new tab for verification
                 window.open('/import-verification', '_blank');
 
             } catch (error) {
@@ -116,7 +121,6 @@ export default function FileDetails() {
                     variant: 'destructive',
                 });
             } finally {
-                // Reset file input
                 if(importInputRef.current) {
                     importInputRef.current.value = '';
                 }
@@ -139,7 +143,9 @@ export default function FileDetails() {
         return <Card><CardHeader><CardTitle>File not found</CardTitle></CardHeader></Card>
     }
 
-    const sortedHistory = [...(entry.locationHistory || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedHistory = [...(entry.locationHistory || [])]
+        .map((h, index) => ({...h, originalIndex: index}))
+        .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const handleDownloadExcel = () => {
         const dataToExport = sortedHistory.map(item => {
@@ -166,6 +172,35 @@ export default function FileDetails() {
     const YesNoBadge = ({value}: {value: boolean | undefined}) => (
         <Badge variant={value ? "default" : "secondary"}>{value ? 'Yes' : 'No'}</Badge>
     )
+
+    const handleEditHistory = (item: LocationHistory, index: number) => {
+        setSelectedHistoryItem({ item, index });
+        setEditDialogOpen(true);
+    };
+    
+    const handleDeleteHistory = (item: LocationHistory, index: number) => {
+        setSelectedHistoryItem({ item, index });
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDeleteHistory = async () => {
+        if (!selectedHistoryItem || !entry) return;
+
+        const db = getDatabase(app);
+        const updatedHistory = [...(entry.locationHistory || [])];
+        updatedHistory.splice(selectedHistoryItem.index, 1);
+
+        const entryRef = ref(db, `entries/${entry.id}`);
+        await update(entryRef, { locationHistory: updatedHistory });
+
+        toast({
+            title: 'History Entry Deleted',
+            description: 'The history entry has been removed.',
+            variant: 'destructive',
+        });
+        setDeleteDialogOpen(false);
+        setSelectedHistoryItem(null);
+    };
 
     return (
         <>
@@ -195,7 +230,7 @@ export default function FileDetails() {
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
-                            <Button onClick={handleImportClick} variant="outline" size="sm">
+                            <Button onClick={handleImportClick} variant="outline" size="sm" disabled={entry.status === 'Closed'}>
                                 <Upload className="mr-2 h-4 w-4" />
                                 Import
                             </Button>
@@ -218,6 +253,7 @@ export default function FileDetails() {
                                 <TableHead>Signed</TableHead>
                                 <TableHead>Sealed</TableHead>
                                 <TableHead>Notes</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -237,6 +273,25 @@ export default function FileDetails() {
                                     <TableCell><YesNoBadge value={item.isSigned} /></TableCell>
                                     <TableCell><YesNoBadge value={item.isSealed} /></TableCell>
                                     <TableCell>{remainingNotes}</TableCell>
+                                    <TableCell className="text-right">
+                                        {item.notes?.startsWith('Added Doc:') && entry.status !== 'Closed' && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => handleEditHistory(item, item.originalIndex)}>
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteHistory(item, item.originalIndex)} className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                                 )
                             })}
@@ -246,6 +301,29 @@ export default function FileDetails() {
                     </CardContent>
                 </Card>
             </div>
+            {selectedHistoryItem && entry && (
+                <EditHistoryDialog 
+                    isOpen={isEditDialogOpen}
+                    setIsOpen={setEditDialogOpen}
+                    entry={entry}
+                    historyItem={selectedHistoryItem.item}
+                    historyIndex={selectedHistoryItem.index}
+                />
+            )}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete this history entry. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteHistory}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }

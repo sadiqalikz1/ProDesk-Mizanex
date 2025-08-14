@@ -1,8 +1,6 @@
 
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { getDatabase, ref, onValue } from 'firebase/database';
-import { app } from '@/lib/firebase';
 import {
   Card,
   CardContent,
@@ -23,85 +21,28 @@ import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import Link from 'next/link';
-
-type OrganizedData = {
-  [room: string]: Rack[];
-};
+import { useFileTracker } from '@/context/file-tracker-context';
 
 export default function StorageDiagram() {
-  const [data, setData] = useState<OrganizedData>({});
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { entries, racks, loading } = useFileTracker();
 
-  useEffect(() => {
-    const db = getDatabase(app);
-    const racksRef = ref(db, 'racksMetadata');
-    const shelvesRef = ref(db, 'shelvesMetadata');
-    const entriesRef = ref(db, 'entries');
-
-    let racksData: Rack[] = [];
-    let shelvesData: Shelf[] = [];
-    let entriesData: Entry[] = [];
-
-    const handleDataLoaded = () => {
-      if (racksData.length > 0 && shelvesData.length > 0 && entriesData.length > 0) {
-        const organizedData: OrganizedData = {};
-
-        racksData.forEach((rack) => {
-          rack.shelves = shelvesData.filter(
-            (s) => s.roomNo === rack.roomNo && s.rackNo === rack.rackNo
-          ).sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo));
-
-          if (!organizedData[rack.roomNo]) {
-            organizedData[rack.roomNo] = [];
-          }
-          organizedData[rack.roomNo].push(rack);
-        });
-        
-        const sortedRooms = Object.keys(organizedData).sort();
-        const finalData: OrganizedData = {};
-        sortedRooms.forEach((room) => {
-          finalData[room] = organizedData[room].sort((a, b) =>
-            a.rackNo.localeCompare(b.rackNo)
-          );
-        });
-
-        setData(finalData);
-        setEntries(entriesData);
-        setLoading(false);
+  const organizedData = useMemo(() => {
+    const data: { [room: string]: Rack[] } = {};
+    racks.forEach((rack) => {
+      if (!data[rack.roomNo]) {
+        data[rack.roomNo] = [];
       }
-    };
-    
-    const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
-        entriesData = [];
-        snapshot.forEach((childSnapshot) => {
-            entriesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
-        });
-        handleDataLoaded();
+      data[rack.roomNo].push(rack);
     });
-    
-    const unsubscribeRacks = onValue(racksRef, (racksSnapshot) => {
-      racksData = [];
-      racksSnapshot.forEach((childSnapshot) => {
-        racksData.push({ shelves: [], ...childSnapshot.val() });
-      });
-      handleDataLoaded();
-    });
-
-    const unsubscribeShelves = onValue(shelvesRef, (shelvesSnapshot) => {
-      shelvesData = [];
-      shelvesSnapshot.forEach((childSnapshot) => {
-        shelvesData.push({ id: childSnapshot.key!, ...childSnapshot.val() });
-      });
-      handleDataLoaded();
-    });
-
-    return () => {
-        unsubscribeRacks();
-        unsubscribeEntries();
-        unsubscribeShelves();
-    };
-  }, []);
+     const sortedRooms = Object.keys(data).sort();
+     const finalData: { [room: string]: Rack[] } = {};
+     sortedRooms.forEach((room) => {
+       finalData[room] = data[room].sort((a, b) =>
+         a.rackNo.localeCompare(b.rackNo)
+       );
+     });
+    return finalData;
+  }, [racks]);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -177,7 +118,7 @@ export default function StorageDiagram() {
     return <Skeleton className="h-[400px] w-full" />;
   }
 
-  if (Object.keys(data).length === 0) {
+  if (Object.keys(organizedData).length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -190,7 +131,7 @@ export default function StorageDiagram() {
     );
   }
 
-  const sortedRooms = Object.keys(data).sort();
+  const sortedRooms = Object.keys(organizedData).sort();
 
   return (
     <Card>
@@ -212,7 +153,7 @@ export default function StorageDiagram() {
               </AccordionTrigger>
               <AccordionContent className="pt-4 border-t">
                   <div className="space-y-8 p-4 bg-muted/20 rounded-lg">
-                      {data[room].map((rack) => (
+                      {organizedData[room].map((rack) => (
                         <Card key={rack.id} className="flex flex-col bg-background">
                             <CardHeader className="flex flex-row items-center justify-between p-4 bg-muted/50">
                             <div className="flex items-center gap-3">
