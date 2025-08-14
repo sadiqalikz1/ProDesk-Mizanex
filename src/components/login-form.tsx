@@ -3,15 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { BriefcaseBusiness, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertCircle } from 'lucide-react';
-
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -37,53 +36,54 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <BriefcaseBusiness className="h-8 w-8 text-primary" />
-        </div>
-        <CardTitle>Welcome to ProDesk</CardTitle>
-        <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          {error && (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Login Failed</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <Button type="submit" className="w-full">
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="w-full max-w-md animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
+      <Card className="border-none bg-transparent shadow-none">
+        <CardHeader className="text-left">
+          <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</CardTitle>
+          <CardDescription className="text-gray-600">Enter your credentials to access your dashboard.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-gray-700">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoComplete="username"
+                className="bg-white/80 focus:bg-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="bg-white/80 focus:bg-white"
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Login Failed</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full text-base py-6 bg-primary hover:bg-primary/90">
+              <LogIn className="mr-2 h-5 w-5" />
+              Sign In
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
