@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -18,12 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  output: 'export',
-  devIndicators: {
-    allowedDevOrigins: [
-        'https://*.cloudworkstations.dev',
-    ],
-  }
 };
 
 export default nextConfig;

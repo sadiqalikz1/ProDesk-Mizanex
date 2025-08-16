@@ -155,7 +155,7 @@ export default function FileLog() {
           <div>
             <CardTitle>File History Log</CardTitle>
             <CardDescription>
-              A detailed log of all activities for every file.
+              A complete log of all activities for every file.
             </CardDescription>
           </div>
           <Input
@@ -167,19 +167,16 @@ export default function FileLog() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[70vh] w-full overflow-auto">
+        <div className="h-full w-full overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-card">
               <TableRow>
                 <TableHead>File Name</TableHead>
-                <TableHead>File Type</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Doc Pos</TableHead>
                 <TableHead>Doc #</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Updated By</TableHead>
-                <TableHead>Date</TableHead>
                 <TableHead>Signed</TableHead>
                 <TableHead>Sealed</TableHead>
                 <TableHead>Notes</TableHead>
@@ -191,19 +188,19 @@ export default function FileLog() {
                 const { docPosition, docNumber, remainingNotes } = getDocInfo(item.history.notes);
                 return (
                   <TableRow key={`${item.parentFile.id}-${index}`}>
-                    <TableCell className="font-medium">{item.parentFile.fileNo}</TableCell>
-                    <TableCell>{item.parentFile.fileType}</TableCell>
-                    <TableCell>{item.parentFile.company}</TableCell>
-                    <TableCell>{item.history.location}</TableCell>
-                    <TableCell>{docPosition}</TableCell>
-                    <TableCell>{docNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>{item.parentFile.fileNo}</div>
+                      <div className="text-xs text-muted-foreground">{item.parentFile.company}</div>
+                    </TableCell>
+                    <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(item.history.status)}>
                         {item.history.status}
                       </Badge>
                     </TableCell>
+                    <TableCell>{docPosition}</TableCell>
+                    <TableCell>{docNumber}</TableCell>
                     <TableCell>{item.history.updatedBy}</TableCell>
-                    <TableCell>{new Date(item.history.date).toLocaleString()}</TableCell>
                     <TableCell><YesNoBadge value={item.history.isSigned} /></TableCell>
                     <TableCell><YesNoBadge value={item.history.isSealed} /></TableCell>
                     <TableCell>{remainingNotes}</TableCell>

@@ -1,7 +1,8 @@
 
+
 'use client'
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { getDatabase, ref, onValue, update, remove } from "firebase/database";
 import { app } from "@/lib/firebase";
@@ -12,11 +13,149 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
 import { Button } from "../ui/button";
-import { Download, Upload, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Download, Upload, MoreVertical, Edit, Trash2, Search, Filter, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { EditHistoryDialog } from "./edit-history-dialog";
+import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Separator } from "../ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Checkbox } from "../ui/checkbox";
+import { ImportVerificationDialog } from "./import-verification-dialog";
+
+type Filters = {
+    signed: 'any' | 'yes' | 'no';
+    sealed: 'any' | 'yes' | 'no';
+    hasContent: 'any' | 'yes' | 'no';
+}
+
+function DeleteHistoryDialog({ entry, onConfirm }: { entry: Entry, onConfirm: (selectedIndices: number[]) => void }) {
+    const [selected, setSelected] = useState<number[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const deletableHistory = useMemo(() => 
+        (entry.locationHistory || [])
+            .map((h, index) => ({...h, originalIndex: index}))
+            .filter(h => h.status !== 'Created')
+    , [entry.locationHistory]);
+
+    const toggleSelect = (index: number) => {
+        setSelected(prev => 
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selected.length === deletableHistory.length) {
+        setSelected([]);
+        } else {
+        setSelected(deletableHistory.map(h => h.originalIndex));
+        }
+    };
+
+    const handleConfirm = () => {
+        onConfirm(selected);
+        setSelected([]);
+        setIsOpen(false);
+    }
+    
+    const YesNoBadge = ({value}: {value: boolean | undefined}) => (
+        <Badge variant={value ? "default" : "secondary"}>{value ? 'Yes' : 'No'}</Badge>
+    )
+    
+    const getStatusVariant = (status: string) => {
+        switch (status) {
+          case 'In Storage': return 'default';
+          case 'Checked Out': return 'secondary';
+          case 'In Use': return 'destructive';
+          case 'Closed':
+          case 'Created':
+          case 'Approved':
+          case 'Sealed':
+          case 'Signed':
+            return 'outline';
+          default: return 'default';
+        }
+    };
+
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                 <Button variant="destructive" size="sm" disabled={entry.status === 'Closed'}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Records
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl h-4/5 flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Delete History Records</DialogTitle>
+                    <DialogDescription>Select records to permanently delete from file: <span className='font-bold text-primary'>{entry.fileNo}</span></DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <Table>
+                        <TableHeader className="sticky top-0 bg-background">
+                            <TableRow>
+                                <TableHead className='w-12'>
+                                    <Checkbox 
+                                        checked={selected.length > 0 && selected.length === deletableHistory.length}
+                                        onCheckedChange={toggleSelectAll}
+                                        disabled={deletableHistory.length === 0}
+                                    />
+                                </TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Updated By</TableHead>
+                                <TableHead>Signed</TableHead>
+                                <TableHead>Sealed</TableHead>
+                                <TableHead>Notes</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {deletableHistory.map(item => (
+                                <TableRow key={item.originalIndex} onClick={() => toggleSelect(item.originalIndex)} className='cursor-pointer'>
+                                    <TableCell>
+                                        <Checkbox checked={selected.includes(item.originalIndex)} />
+                                    </TableCell>
+                                    <TableCell>{new Date(item.date).toLocaleString()}</TableCell>
+                                    <TableCell><Badge variant={getStatusVariant(item.status)}>{item.status}</Badge></TableCell>
+                                    <TableCell>{item.updatedBy}</TableCell>
+                                    <TableCell><YesNoBadge value={item.isSigned} /></TableCell>
+                                    <TableCell><YesNoBadge value={item.isSealed} /></TableCell>
+                                    <TableCell>{item.notes}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={selected.length === 0}>
+                            Delete Selected ({selected.length})
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the {selected.length} selected history records. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirm}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </DialogContent>
+        </Dialog>
+    )
+
+}
 
 
 export default function FileDetails() {
@@ -26,10 +165,18 @@ export default function FileDetails() {
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
     const importInputRef = useRef<HTMLInputElement>(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [importData, setImportData] = useState<any>(null);
 
     const [isEditDialogOpen, setEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<{item: LocationHistory, index: number} | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<Filters>({
+        signed: 'any',
+        sealed: 'any',
+        hasContent: 'any',
+    });
 
 
     useEffect(() => {
@@ -58,7 +205,6 @@ export default function FileDetails() {
           case 'Checked Out': return 'secondary';
           case 'In Use': return 'destructive';
           case 'Closed':
-          case 'Created':
           case 'Approved':
           case 'Sealed':
           case 'Signed':
@@ -106,12 +252,8 @@ export default function FileDetails() {
                      return;
                 }
                 
-                sessionStorage.setItem('importData', JSON.stringify({
-                    fileData: data,
-                    targetFileId: entry.id,
-                }));
-                
-                window.open('/import-verification', '_blank');
+                setImportData(data);
+                setIsImporting(true);
 
             } catch (error) {
                 console.error("Import error:", error);
@@ -145,10 +287,45 @@ export default function FileDetails() {
 
     const sortedHistory = [...(entry.locationHistory || [])]
         .map((h, index) => ({...h, originalIndex: index}))
-        .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        .filter(h => h.status !== 'Created')
+        .sort((a,b) => {
+          const posA = parseInt(getDocInfo(a.notes).docPosition, 10) || 0;
+          const posB = parseInt(getDocInfo(b.notes).docPosition, 10) || 0;
+          if (posB !== posA) {
+            return posB - posA;
+          }
+          return new Date(b.date).getTime() - new Date(a.date).getTime()
+        });
+        
+    const filteredHistory = sortedHistory.filter(item => {
+        // Text search
+        const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
+        const lowercasedTerm = searchTerm.toLowerCase();
+        const signedText = item.isSigned ? 'yes' : 'no';
+        const sealedText = item.isSealed ? 'yes' : 'no';
+
+        const matchesSearch = (
+            item.status.toLowerCase().includes(lowercasedTerm) ||
+            docPosition.toLowerCase().includes(lowercasedTerm) ||
+            docNumber.toLowerCase().includes(lowercasedTerm) ||
+            item.updatedBy.toLowerCase().includes(lowercasedTerm) ||
+            remainingNotes.toLowerCase().includes(lowercasedTerm) ||
+            new Date(item.date).toLocaleString().toLowerCase().includes(lowercasedTerm) ||
+            signedText.includes(lowercasedTerm) ||
+            sealedText.includes(lowercasedTerm)
+        );
+
+        // Advanced filters
+        const matchesSigned = filters.signed === 'any' || (filters.signed === 'yes' && item.isSigned) || (filters.signed === 'no' && !item.isSigned);
+        const matchesSealed = filters.sealed === 'any' || (filters.sealed === 'yes' && item.isSealed) || (filters.sealed === 'no' && !item.isSealed);
+        const hasContent = item.notes?.startsWith('Added Doc:');
+        const matchesContent = filters.hasContent === 'any' || (filters.hasContent === 'yes' && hasContent) || (filters.hasContent === 'no' && !hasContent);
+
+        return matchesSearch && matchesSigned && matchesSealed && matchesContent;
+    });
 
     const handleDownloadExcel = () => {
-        const dataToExport = sortedHistory.map(item => {
+        const dataToExport = filteredHistory.map(item => {
             const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
             return {
                 Date: new Date(item.date).toLocaleString(),
@@ -202,6 +379,33 @@ export default function FileDetails() {
         setSelectedHistoryItem(null);
     };
 
+    const confirmDeleteSelectedHistory = async (selectedIndices: number[]) => {
+        if (!entry || selectedIndices.length === 0) return;
+
+        const db = getDatabase(app);
+        const entryRef = ref(db, `entries/${entry.id}`);
+        
+        const selectedSet = new Set(selectedIndices);
+        const updatedHistory = (entry.locationHistory || []).filter((h, index) => !selectedSet.has(index));
+
+        await update(entryRef, { locationHistory: updatedHistory });
+
+        toast({
+            title: 'Records Deleted',
+            description: `Successfully deleted ${selectedIndices.length} history records.`,
+            variant: 'destructive'
+        });
+    }
+
+    
+    const handleFilterChange = (filterName: keyof Filters, value: string) => {
+        setFilters(prev => ({...prev, [filterName]: value}));
+    }
+    
+    const clearFilters = () => {
+        setFilters({ signed: 'any', sealed: 'any', hasContent: 'any' });
+    }
+
     return (
         <>
             <div className="space-y-8">
@@ -223,21 +427,93 @@ export default function FileDetails() {
                 </Card>
 
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>File History</CardTitle>
-                            <CardDescription>A complete log of all actions taken on this file.</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
-                            <Button onClick={handleImportClick} variant="outline" size="sm" disabled={entry.status === 'Closed'}>
-                                <Upload className="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
-                            <Button onClick={handleDownloadExcel} variant="outline" size="sm">
-                                <Download className="mr-2 h-4 w-4" />
-                                Download as Excel
-                            </Button>
+                    <CardHeader>
+                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <CardTitle>File History</CardTitle>
+                                <CardDescription>A complete log of all actions taken on this file.</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                        placeholder="Search history..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80">
+                                        <div className="grid gap-4">
+                                            <div className="space-y-2">
+                                                <h4 className="font-medium leading-none">Filters</h4>
+                                                <p className="text-sm text-muted-foreground">
+                                                Set filters for the file history.
+                                                </p>
+                                            </div>
+                                            <Separator />
+                                            <div className="grid gap-2">
+                                                 <div className="grid grid-cols-3 items-center gap-4">
+                                                    <Label>Signed</Label>
+                                                    <Select value={filters.signed} onValueChange={(val) => handleFilterChange('signed', val)}>
+                                                        <SelectTrigger className="col-span-2 h-8">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="any">Any</SelectItem>
+                                                            <SelectItem value="yes">Yes</SelectItem>
+                                                            <SelectItem value="no">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                 <div className="grid grid-cols-3 items-center gap-4">
+                                                    <Label>Sealed</Label>
+                                                    <Select value={filters.sealed} onValueChange={(val) => handleFilterChange('sealed', val)}>
+                                                        <SelectTrigger className="col-span-2 h-8">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="any">Any</SelectItem>
+                                                            <SelectItem value="yes">Yes</SelectItem>
+                                                            <SelectItem value="no">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="grid grid-cols-3 items-center gap-4">
+                                                    <Label>Content</Label>
+                                                    <Select value={filters.hasContent} onValueChange={(val) => handleFilterChange('hasContent', val)}>
+                                                        <SelectTrigger className="col-span-2 h-8">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="any">Any</SelectItem>
+                                                            <SelectItem value="yes">Doc Adds Only</SelectItem>
+                                                            <SelectItem value="no">Updates Only</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                <X className="mr-2 h-4 w-4" /> Clear Filters
+                                            </Button>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
+                                <Button onClick={handleImportClick} variant="outline" size="sm" disabled={entry.status === 'Closed'}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Import
+                                </Button>
+                                <Button onClick={handleDownloadExcel} variant="outline" size="sm">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
+                                </Button>
+                                <DeleteHistoryDialog entry={entry} onConfirm={confirmDeleteSelectedHistory} />
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -257,7 +533,7 @@ export default function FileDetails() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {sortedHistory.map((item, index) => {
+                            {filteredHistory.map((item, index) => {
                                 const { docPosition, docNumber, remainingNotes } = getDocInfo(item.notes);
                                 return (
                                 <TableRow key={index}>
@@ -301,6 +577,16 @@ export default function FileDetails() {
                     </CardContent>
                 </Card>
             </div>
+
+            {entry && (
+                 <ImportVerificationDialog 
+                    isOpen={isImporting}
+                    setIsOpen={setIsImporting}
+                    targetFile={entry}
+                    fileData={importData}
+                 />
+            )}
+
             {selectedHistoryItem && entry && (
                 <EditHistoryDialog 
                     isOpen={isEditDialogOpen}

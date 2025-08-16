@@ -1,7 +1,7 @@
 
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { getDatabase, ref, onValue, get } from 'firebase/database';
 import { app } from '@/lib/firebase';
 import { Entry, Rack, Shelf } from '@/components/file-tracker/types';
 
@@ -14,6 +14,7 @@ type LocationData = {
 type FileTrackerContextType = {
   loading: boolean;
   entries: Entry[];
+  allEntries: Entry[]; // To provide all entries to the import dialog without sorting
   companies: string[];
   docTypes: string[];
   racks: Rack[];
@@ -28,6 +29,7 @@ const FileTrackerContext = createContext<FileTrackerContextType | undefined>(und
 export const FileTrackerProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [allEntries, setAllEntries] = useState<Entry[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
   const [docTypes, setDocTypes] = useState<string[]>([]);
   const [racks, setRacks] = useState<Rack[]>([]);
@@ -35,21 +37,68 @@ export const FileTrackerProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const db = getDatabase(app);
-
     const entriesRef = ref(db, 'entries');
     const companiesRef = ref(db, 'companies');
     const docTypesRef = ref(db, 'docTypes');
     const racksRef = ref(db, 'racksMetadata');
     const shelvesRef = ref(db, 'shelvesMetadata');
 
-    let loadedDataCount = 0;
-    const totalDataSources = 5;
-    const checkAllDataLoaded = () => {
-        loadedDataCount++;
-        if (loadedDataCount === totalDataSources) {
-            setLoading(false);
-        }
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [
+          entriesSnap,
+          companiesSnap,
+          docTypesSnap,
+          racksSnap,
+          shelvesSnap
+        ] = await Promise.all([
+          get(entriesRef),
+          get(companiesRef),
+          get(docTypesRef),
+          get(racksRef),
+          get(shelvesRef),
+        ]);
+
+        const entriesData = entriesSnap.val();
+        const loadedEntries: Entry[] = entriesData
+          ? Object.keys(entriesData).map((key) => ({
+              id: key,
+              ...entriesData[key],
+              dateCreated: new Date(entriesData[key].dateCreated),
+              locationHistory: entriesData[key].locationHistory || [],
+            }))
+          : [];
+        setAllEntries(loadedEntries);
+        setEntries(loadedEntries.sort((a,b) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()));
+
+        setCompanies(companiesSnap.exists() ? Object.values(companiesSnap.val()) : []);
+        setDocTypes(docTypesSnap.exists() ? Object.values(docTypesSnap.val()) : []);
+
+        const loadedShelvesData = shelvesSnap.val() || {};
+        const loadedShelves: Shelf[] = Object.keys(loadedShelvesData).map(key => ({ id: key, ...loadedShelvesData[key] }));
+        setShelves(loadedShelves);
+        
+        const racksData = racksSnap.val() || {};
+        const loadedRacks: Rack[] = Object.keys(racksData).map(key => {
+            const rackData = racksData[key];
+            return {
+                ...rackData,
+                id: key,
+                shelves: loadedShelves.filter(s => s.roomNo === rackData.roomNo && s.rackNo === rackData.rackNo)
+                                    .sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo))
+            }
+        });
+        setRacks(loadedRacks);
+
+      } catch (error) {
+        console.error("Firebase initial data fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
 
     const entriesUnsub = onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
@@ -61,50 +110,35 @@ export const FileTrackerProvider = ({ children }: { children: ReactNode }) => {
             locationHistory: data[key].locationHistory || [],
           }))
         : [];
+      setAllEntries(loadedEntries);
       setEntries(loadedEntries.sort((a,b) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()));
-      checkAllDataLoaded();
     });
 
     const companiesUnsub = onValue(companiesRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setCompanies(Object.values(snapshot.val()));
-        } else {
-          setCompanies([]);
-        }
-        checkAllDataLoaded();
+        setCompanies(snapshot.exists() ? Object.values(snapshot.val()) : []);
     });
 
     const docTypesUnsub = onValue(docTypesRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setDocTypes(Object.values(snapshot.val()));
-        } else {
-          setDocTypes([]);
-        }
-        checkAllDataLoaded();
+        setDocTypes(snapshot.exists() ? Object.values(snapshot.val()) : []);
     });
 
-    const shelvesUnsub = onValue(shelvesRef, (snapshot) => {
-        const loadedShelves: Shelf[] = [];
-        snapshot.forEach((child) => loadedShelves.push({id: child.key!, ...child.val()}));
+    const shelvesUnsub = onValue(shelvesRef, (shelvesSnapshot) => {
+        const data = shelvesSnapshot.val() || {};
+        const loadedShelves: Shelf[] = Object.keys(data).map(key => ({ id: key, ...data[key]}));
         setShelves(loadedShelves);
-        
-        const racksUnsub = onValue(racksRef, (rackSnapshot) => {
-            const loadedRacks: Rack[] = [];
-            rackSnapshot.forEach((child) => {
-                const rackData = child.val();
-                loadedRacks.push({
-                    ...rackData,
-                    shelves: loadedShelves.filter(s => s.roomNo === rackData.roomNo && s.rackNo === rackData.rackNo)
-                                        .sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo))
-                });
-            });
-            setRacks(loadedRacks);
-            checkAllDataLoaded();
+    });
+    
+    const racksUnsub = onValue(racksRef, (rackSnapshot) => {
+        const data = rackSnapshot.val() || {};
+        const loadedRacks: Omit<Rack, 'shelves'>[] = Object.keys(data).map(key => ({ id: key, ...data[key]}));
+        setRacks(prevRacks => {
+            // This ensures we use the latest shelves state
+            return loadedRacks.map(rackData => ({
+                ...rackData,
+                shelves: shelves.filter(s => s.roomNo === rackData.roomNo && s.rackNo === rackData.rackNo)
+                                    .sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo))
+            }));
         });
-
-        checkAllDataLoaded(); // Shelves have loaded
-
-        return () => racksUnsub();
     });
     
     return () => {
@@ -112,6 +146,7 @@ export const FileTrackerProvider = ({ children }: { children: ReactNode }) => {
       companiesUnsub();
       docTypesUnsub();
       shelvesUnsub();
+      racksUnsub();
     };
   }, []);
   
@@ -125,12 +160,28 @@ export const FileTrackerProvider = ({ children }: { children: ReactNode }) => {
             groupedData[roomNo][rackNo].push(shelf);
         }
     });
+    // Sort racks within rooms
+    for (const room in groupedData) {
+        for(const rack in groupedData[room]) {
+            groupedData[room][rack].sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo));
+        }
+    }
     return groupedData;
+  }, [shelves]);
+  
+  // This useEffect ensures that when shelves are updated, the racks' `shelves` array is also updated.
+  useEffect(() => {
+    setRacks(prevRacks => prevRacks.map(rack => ({
+      ...rack,
+      shelves: shelves.filter(s => s.roomNo === rack.roomNo && s.rackNo === rack.rackNo)
+                       .sort((a,b) => Number(a.shelfNo) - Number(b.shelfNo))
+    })));
   }, [shelves]);
 
   const value = {
     loading,
     entries,
+    allEntries,
     companies,
     docTypes,
     racks,

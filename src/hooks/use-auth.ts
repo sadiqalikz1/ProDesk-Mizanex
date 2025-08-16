@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { getDatabase, ref, get, set } from "firebase/database";
@@ -7,20 +8,31 @@ type User = {
   username: string;
 };
 
-// This hook now uses Firebase Realtime Database for user storage.
+type StoredSession = {
+  user: User;
+  timestamp: number;
+}
+
+const THREE_DAYS_IN_MS = 3 * 24 * 60 * 60 * 1000;
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
-      const storedUser = sessionStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      const storedSession = localStorage.getItem('userSession');
+      if (storedSession) {
+        const { user: storedUser, timestamp }: StoredSession = JSON.parse(storedSession);
+        if (Date.now() - timestamp < THREE_DAYS_IN_MS) {
+            setUser(storedUser);
+        } else {
+            localStorage.removeItem('userSession');
+        }
       }
     } catch (error) {
-      console.error('Failed to parse user from session storage', error);
-      sessionStorage.removeItem('user');
+      console.error('Failed to parse user from local storage', error);
+      localStorage.removeItem('userSession');
     } finally {
         setLoading(false);
     }
@@ -35,14 +47,15 @@ export function useAuth() {
       const snapshot = await get(userRef);
 
       if (snapshot.exists() && snapshot.val().password === password) {
-        const userToStore = { username: snapshot.val().username };
-        sessionStorage.setItem('user', JSON.stringify(userToStore));
+        const userToStore: User = { username: snapshot.val().username };
+        const sessionToStore: StoredSession = { user: userToStore, timestamp: Date.now() };
+
+        localStorage.setItem('userSession', JSON.stringify(sessionToStore));
         setUser(userToStore);
       } else {
         throw new Error('Invalid username or password');
       }
     } catch (error: any) {
-        // This will catch both the "Invalid username or password" error and any database errors.
         throw error;
     } finally {
         setLoading(false);
@@ -50,7 +63,7 @@ export function useAuth() {
   }, []);
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('userSession');
     setUser(null);
   }, []);
   

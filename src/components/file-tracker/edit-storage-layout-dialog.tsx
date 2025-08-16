@@ -217,9 +217,10 @@ export function EditStorageLayoutDialog({
             Update the layout for this rack. Note: Changing the layout will regenerate all shelves. Files on deleted shelves will need to be reassigned.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-4 border rounded-md">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3 flex-1">
+        <div className="space-y-4">
+             <div className="space-y-2">
+                <Label>Rack Name</Label>
+                <div className="flex items-center gap-3">
                     <Library className="h-5 w-5 text-primary" />
                     <Input
                         placeholder="Enter Rack Name (e.g., Left Wall)"
@@ -228,7 +229,7 @@ export function EditStorageLayoutDialog({
                     />
                 </div>
             </div>
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                     <Label>Number of Rows</Label>
                     <Input
@@ -250,7 +251,7 @@ export function EditStorageLayoutDialog({
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label>File Capacity per Shelf</Label>
+                    <Label>Capacity per Shelf</Label>
                     <Input
                         type="number"
                         placeholder="e.g., 10"

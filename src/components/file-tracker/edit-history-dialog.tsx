@@ -65,6 +65,25 @@ export function EditHistoryDialog({
   const handleSave = async () => {
     if (!entry || historyIndex < 0) return;
 
+    // --- Validation Start ---
+    if (docPosition) {
+        const isDuplicatePosition = (entry.locationHistory || []).some((h, index) => {
+            if (index === historyIndex) return false; // Skip the item being edited
+            const { docPosition: existingPos } = getDocInfo(h.notes);
+            return existingPos === docPosition;
+        });
+
+        if (isDuplicatePosition) {
+            toast({
+                title: "Duplicate Position",
+                description: `Position "${docPosition}" already exists in this file. Please choose a different position.`,
+                variant: "destructive",
+            });
+            return;
+        }
+    }
+    // --- Validation End ---
+
     let constructedNotes = 'Added Doc: ';
     if (docNumber) constructedNotes += `#${docNumber} `;
     if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;

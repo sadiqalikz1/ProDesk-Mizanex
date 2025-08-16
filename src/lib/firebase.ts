@@ -1,6 +1,7 @@
+
 // Import the functions you need from the SDKs you need
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";
@@ -23,9 +24,12 @@ const firestore = getFirestore(app);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
-let analytics;
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
-}
+// Initialize Analytics only on the client side
+const analytics = (async () => {
+    if (typeof window !== 'undefined' && await isSupported()) {
+        return getAnalytics(app);
+    }
+    return null;
+})();
 
 export { app, firestore, auth, database, analytics };

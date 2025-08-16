@@ -50,9 +50,9 @@ export default function QuickAddToFile() {
     setActiveEntries(entries.filter(e => e.status !== 'Closed'));
   }, [entries]);
   
-  useEffect(() => {
-    if (selectedFile) {
-      const history = selectedFile.locationHistory || [];
+  const calculateNextPosition = (file: Entry | null) => {
+    if (file) {
+      const history = file.locationHistory || [];
       const existingPositions = history
         .map(h => {
           const match = h.notes?.match(/\(Pos: (\d+)\)/);
@@ -73,6 +73,10 @@ export default function QuickAddToFile() {
     } else {
       setDocPosition('');
     }
+  }
+
+  useEffect(() => {
+    calculateNextPosition(selectedFile);
   }, [selectedFile]);
 
   useEffect(() => {
@@ -126,14 +130,17 @@ export default function QuickAddToFile() {
     const fullDocNumber = getFullDocNumber(docNumber);
 
     if (fullDocNumber) {
-        // Only check for duplicates within the same file type.
         const filesWithSameType = entries.filter(e => e.fileType === entry.fileType);
         let duplicateInfo: DuplicateError | null = null;
 
         for (const file of filesWithSameType) {
-            const duplicateHistoryEntry = (file.locationHistory || []).find(h => 
-                h.notes?.startsWith('Added Doc:') && h.notes.includes(`#${fullDocNumber} `)
-            );
+            const duplicateHistoryEntry = (file.locationHistory || []).find(h => {
+                if (!h.notes?.startsWith('Added Doc:')) return false;
+                const docIdMatch = h.notes.match(/#(\S+)/);
+                const existingDocId = docIdMatch ? docIdMatch[1] : null;
+                return existingDocId === fullDocNumber;
+            });
+
             if (duplicateHistoryEntry) {
                 duplicateInfo = { file: file, history: duplicateHistoryEntry };
                 break;
@@ -165,14 +172,13 @@ export default function QuickAddToFile() {
         return;
     }
 
-    const entryRef = ref(getDatabase(app), `entries/${selectedFile.id}`);
-    
     let constructedNotes = 'Added Doc: ';
     if (fullDocNumber) constructedNotes += `#${fullDocNumber} `;
     if (docPosition) constructedNotes += `(Pos: ${docPosition}) `;
     if (notes) constructedNotes += `- ${notes}`;
 
-    if (!fullDocNumber && !notes && !docPosition) {
+    // Check if at least one field is provided
+    if (!fullDocNumber.trim() && !docPosition.trim() && !notes.trim()) {
       toast({
         title: 'Missing Information',
         description: 'Please provide a document number, position, or notes.',
@@ -180,6 +186,8 @@ export default function QuickAddToFile() {
       });
       return;
     }
+
+    const entryRef = ref(getDatabase(app), `entries/${selectedFile.id}`);
 
     const newHistoryEntry: LocationHistory = {
       date: new Date().toISOString(),
@@ -199,11 +207,16 @@ export default function QuickAddToFile() {
       description: `Successfully added a new entry to the history of file ${entry.fileNo}.`,
     });
     
-    // As requested, do not clear prefix and suffix
     setDocNumber('');
     setNotes('');
     setDuplicateError(null);
+    setIsSigned(true);
+    setIsSealed(true);
     docNumberInputRef.current?.focus();
+    
+    const updatedFile = {...selectedFile, locationHistory: updatedHistory };
+    setSelectedFile(updatedFile);
+    calculateNextPosition(updatedFile);
   };
 
   const getDocInfoFromNotes = (notes: string) => {
@@ -217,7 +230,7 @@ export default function QuickAddToFile() {
   const filteredEntries = activeEntries.filter(entry => {
       const fullLabel = `${entry.fileNo} - ${entry.fileType} - ${entry.company}`;
       return fullLabel.toLowerCase().includes(searchTerm.toLowerCase());
-  }).slice(0, 10); // Limit results to 10 for performance
+  }).slice(0, 10);
 
   return (
     <Card>
