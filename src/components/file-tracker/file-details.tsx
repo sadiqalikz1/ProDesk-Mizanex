@@ -343,7 +343,12 @@ export default function FileDetails() {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "File History");
 
-        XLSX.writeFile(workbook, `${entry.fileNo}_history.xlsx`);
+        const a = new Date();
+        const datePart = `${a.getFullYear()}${(a.getMonth() + 1).toString().padStart(2, '0')}${a.getDate().toString().padStart(2, '0')}`;
+        const timePart = `${a.getHours().toString().padStart(2, '0')}${a.getMinutes().toString().padStart(2, '0')}`;
+        const fileName = `${entry.fileNo}_history_${datePart}-${timePart}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
     }
 
     const YesNoBadge = ({value}: {value: boolean | undefined}) => (
@@ -428,91 +433,95 @@ export default function FileDetails() {
 
                 <Card>
                     <CardHeader>
-                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div>
                                 <CardTitle>File History</CardTitle>
                                 <CardDescription>A complete log of all actions taken on this file.</CardDescription>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        placeholder="Search history..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="pl-10"
-                                    />
+                            <div className="flex flex-col gap-2 md:items-end">
+                                <div className="flex items-center gap-2">
+                                    <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
+                                    <Button onClick={handleImportClick} variant="outline" size="sm" disabled={entry.status === 'Closed'}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Import
+                                    </Button>
+                                    <Button onClick={handleDownloadExcel} variant="outline" size="sm">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Download
+                                    </Button>
+                                    <DeleteHistoryDialog entry={entry} onConfirm={confirmDeleteSelectedHistory} />
                                 </div>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" />Filter</Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-80">
-                                        <div className="grid gap-4">
-                                            <div className="space-y-2">
-                                                <h4 className="font-medium leading-none">Filters</h4>
-                                                <p className="text-sm text-muted-foreground">
-                                                Set filters for the file history.
-                                                </p>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input 
+                                            placeholder="Search history..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" />Filter</Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80">
+                                            <div className="grid gap-4">
+                                                <div className="space-y-2">
+                                                    <h4 className="font-medium leading-none">Filters</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                    Set filters for the file history.
+                                                    </p>
+                                                </div>
+                                                <Separator />
+                                                <div className="grid gap-2">
+                                                     <div className="grid grid-cols-3 items-center gap-4">
+                                                        <Label>Signed</Label>
+                                                        <Select value={filters.signed} onValueChange={(val) => handleFilterChange('signed', val)}>
+                                                            <SelectTrigger className="col-span-2 h-8">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="any">Any</SelectItem>
+                                                                <SelectItem value="yes">Yes</SelectItem>
+                                                                <SelectItem value="no">No</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                     <div className="grid grid-cols-3 items-center gap-4">
+                                                        <Label>Sealed</Label>
+                                                        <Select value={filters.sealed} onValueChange={(val) => handleFilterChange('sealed', val)}>
+                                                            <SelectTrigger className="col-span-2 h-8">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="any">Any</SelectItem>
+                                                                <SelectItem value="yes">Yes</SelectItem>
+                                                                <SelectItem value="no">No</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 items-center gap-4">
+                                                        <Label>Content</Label>
+                                                        <Select value={filters.hasContent} onValueChange={(val) => handleFilterChange('hasContent', val)}>
+                                                            <SelectTrigger className="col-span-2 h-8">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="any">Any</SelectItem>
+                                                                <SelectItem value="yes">Doc Adds Only</SelectItem>
+                                                                <SelectItem value="no">Updates Only</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                                <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                    <X className="mr-2 h-4 w-4" /> Clear Filters
+                                                </Button>
                                             </div>
-                                            <Separator />
-                                            <div className="grid gap-2">
-                                                 <div className="grid grid-cols-3 items-center gap-4">
-                                                    <Label>Signed</Label>
-                                                    <Select value={filters.signed} onValueChange={(val) => handleFilterChange('signed', val)}>
-                                                        <SelectTrigger className="col-span-2 h-8">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="any">Any</SelectItem>
-                                                            <SelectItem value="yes">Yes</SelectItem>
-                                                            <SelectItem value="no">No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                 <div className="grid grid-cols-3 items-center gap-4">
-                                                    <Label>Sealed</Label>
-                                                    <Select value={filters.sealed} onValueChange={(val) => handleFilterChange('sealed', val)}>
-                                                        <SelectTrigger className="col-span-2 h-8">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="any">Any</SelectItem>
-                                                            <SelectItem value="yes">Yes</SelectItem>
-                                                            <SelectItem value="no">No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="grid grid-cols-3 items-center gap-4">
-                                                    <Label>Content</Label>
-                                                    <Select value={filters.hasContent} onValueChange={(val) => handleFilterChange('hasContent', val)}>
-                                                        <SelectTrigger className="col-span-2 h-8">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="any">Any</SelectItem>
-                                                            <SelectItem value="yes">Doc Adds Only</SelectItem>
-                                                            <SelectItem value="no">Updates Only</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            <Button variant="outline" size="sm" onClick={clearFilters}>
-                                                <X className="mr-2 h-4 w-4" /> Clear Filters
-                                            </Button>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                                <input type="file" ref={importInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
-                                <Button onClick={handleImportClick} variant="outline" size="sm" disabled={entry.status === 'Closed'}>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    Import
-                                </Button>
-                                <Button onClick={handleDownloadExcel} variant="outline" size="sm">
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download
-                                </Button>
-                                <DeleteHistoryDialog entry={entry} onConfirm={confirmDeleteSelectedHistory} />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>

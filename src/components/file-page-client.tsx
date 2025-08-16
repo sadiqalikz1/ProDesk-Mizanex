@@ -52,7 +52,7 @@ export default function FilePageClient() {
         <SidebarInset className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1 p-4 sm:p-6 md:p-8">
-            <div className="mx-auto w-full max-w-4xl space-y-8">
+            <div className="mx-auto w-full max-w-7xl space-y-8">
                <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">File Details</h1>
                 <Button asChild variant="outline">
